@@ -2,8 +2,10 @@
 // Only changes: imports point at the npm `three` package, and the code is wrapped in mountLandingScene().
 // It expects the landing DOM from the prototype: <canvas id="gl">, sections with data-pose="hero|quote|...",
 // the .no-gl poster fallback, and it listens for the `paritas:route` CustomEvent.
-// Use from a client component:  useEffect(() => { import("@/three/landing-scene").then(m => m.mountLandingScene()) }, [])
-// TODO when porting: return a dispose() that cancels requestAnimationFrame, removes listeners and calls renderer.dispose().
+// Use from a client component: const dispose = mountLandingScene({ fontFamily }) in useEffect, call dispose() on unmount.
+// Porting changes: mountLandingScene returns dispose() (cancels the frame loop, removes every listener, frees GPU
+// resources), and takes the font family because next/font renames "Archivo". dispose() also loses the WebGL context,
+// so give each mount a fresh <canvas id="gl"> (components/three/LandingCanvas.tsx does).
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -11,10 +13,13 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
-export function mountLandingScene() {
+export function mountLandingScene({ fontFamily = '"Archivo"' } = {}) {
 
   const canvas = document.getElementById("gl");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let disposed = false, raf = 0;
+  const cleanups = [];
+  const on = (target, type, fn, opts) => { target.addEventListener(type, fn, opts); cleanups.push(() => target.removeEventListener(type, fn, opts)); };
 
   async function main() {
     const small = innerWidth < 900;
@@ -30,6 +35,13 @@ export function mountLandingScene() {
     scene.fog = new THREE.FogExp2(0x050506, .05);
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+    cleanups.push(() => {
+      scene.traverse(o => {
+        if (o.geometry) o.geometry.dispose();
+        for (const m of [].concat(o.material || [])) { if (m.map) m.map.dispose(); m.dispose(); }
+      });
+      scene.environment.dispose(); pmrem.dispose(); renderer.dispose(); renderer.forceContextLoss();
+    });
 
     const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, .1, 120);
     camera.position.set(0, 0, 10);
@@ -70,7 +82,8 @@ export function mountLandingScene() {
     });
 
     /* Coins */
-    try { await Promise.race([document.fonts.load('800 110px "Archivo"'), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+    try { await Promise.race([document.fonts.load(`800 110px ${fontFamily}`), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+    if (disposed) return;
     const R0 = 30, r0 = 11, d0 = 15;
     function coinTex(label) {
       const c = document.createElement("canvas"); c.width = c.height = 512; const g = c.getContext("2d");
@@ -79,8 +92,8 @@ export function mountLandingScene() {
       g.save(); g.translate(256, 256); g.strokeStyle = "rgba(14,14,17,.16)"; g.lineWidth = 1.1; g.beginPath();
       const k = (R0 - r0) / r0, T = Math.PI * 2 * r0, sc = 196 / (R0 - r0 + d0); for (let i = 0; i <= 1600; i++) { const t = i / 1600 * T, x = ((R0 - r0) * Math.cos(t) + d0 * Math.cos(k * t)) * sc, y = ((R0 - r0) * Math.sin(t) - d0 * Math.sin(k * t)) * sc; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); g.restore();
       g.save(); g.translate(256, 256); g.rotate(-Math.PI / 2);
-      g.fillStyle = "#0c0c0f"; g.textAlign = "center"; g.textBaseline = "middle"; g.font = `800 ${label.length > 3 ? 112 : 132}px Archivo, Arial, sans-serif`; g.fillText(label, 0, -8);
-      g.font = "600 30px Archivo, Arial, sans-serif"; g.fillStyle = "rgba(12,12,15,.7)"; g.fillText("Stock Token", 0, 78); g.restore();
+      g.fillStyle = "#0c0c0f"; g.textAlign = "center"; g.textBaseline = "middle"; g.font = `800 ${label.length > 3 ? 112 : 132}px ${fontFamily}, Arial, sans-serif`; g.fillText(label, 0, -8);
+      g.font = `600 30px ${fontFamily}, Arial, sans-serif`; g.fillStyle = "rgba(12,12,15,.7)"; g.fillText("Stock Token", 0, 78); g.restore();
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
     }
     const coinGeo = new THREE.CylinderGeometry(.3, .3, .05, 72); coinGeo.rotateX(Math.PI / 2);
@@ -103,7 +116,7 @@ export function mountLandingScene() {
     const points = new THREE.Points(pGeo, pMat); core.add(points);
     const tmpV = new THREE.Vector3(), cols = { vault: new THREE.Color(0xffffff), pool: new THREE.Color(0x9a9aa3), rfq: new THREE.Color(0x7fa3d0) };
     let favored = null;
-    window.addEventListener("paritas:route", e => { favored = e.detail; });
+    on(window, "paritas:route", e => { favored = e.detail; });
 
     /* Dust */
     const DN = small ? 500 : 1300, dPos = new Float32Array(DN * 3);
@@ -120,6 +133,7 @@ export function mountLandingScene() {
       bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .32, .55, .9);
       composer.addPass(bloom);
       composer.addPass(new OutputPass());
+      cleanups.push(() => { bloom.dispose(); composer.dispose(); });
     }
 
     /* Scroll choreography */
@@ -139,19 +153,19 @@ export function mountLandingScene() {
       for (let i = 0; i < anchors.length - 1; i++) { const a = anchors[i], b = anchors[i + 1]; if (y <= b.y) { const t = ease((y - a.y) / Math.max(1, b.y - a.y)); return { p: a.pose.p.map((v, k) => lerp(v, b.pose.p[k], t)), r: a.pose.r.map((v, k) => lerp(v, b.pose.r[k], t)), s: lerp(a.pose.s, b.pose.s, t), e: lerp(a.pose.e, b.pose.e, t) }; } }
       return anchors[anchors.length - 1].pose;
     }
-    measure(); window.addEventListener("resize", () => { measure(); }, { passive: true }); window.addEventListener("load", measure);
-    setTimeout(measure, 1200);
+    measure(); on(window, "resize", () => { measure(); }, { passive: true }); on(window, "load", measure);
+    const remeasure = setTimeout(measure, 1200); cleanups.push(() => clearTimeout(remeasure));
 
     const cur = { p: [...POSES.hero.p], r: [...POSES.hero.r], s: POSES.hero.s, e: POSES.hero.e };
     const qParent = new THREE.Quaternion(), qOsc = new THREE.Quaternion(), yAxis = new THREE.Vector3(0, 1, 0);
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
-    window.addEventListener("pointermove", e => { mouse.tx = e.clientX / innerWidth - .5; mouse.ty = e.clientY / innerHeight - .5; }, { passive: true });
+    on(window, "pointermove", e => { mouse.tx = e.clientX / innerWidth - .5; mouse.ty = e.clientY / innerHeight - .5; }, { passive: true });
 
     function resize() { const w = innerWidth, h = innerHeight; camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h, false); composer && composer.setSize(w, h); }
-    window.addEventListener("resize", resize);
+    on(window, "resize", resize);
 
     const clock = new THREE.Clock(); let t = 0, running = true, first = true;
-    document.addEventListener("visibilitychange", () => { running = !document.hidden; if (running) { clock.getDelta(); loop(); } });
+    on(document, "visibilitychange", () => { running = !document.hidden; if (running) { clock.getDelta(); loop(); } });
     function frame(dt) {
       t += dt;
       const target = poseAt(scrollY), k = first ? 1 : 1 - Math.pow(.0016, dt);
@@ -188,10 +202,20 @@ export function mountLandingScene() {
       dust.rotation.y = t * .012; dust.position.y = -scrollY * .0006;
       composer ? composer.render() : renderer.render(scene, camera);
     }
-    function loop() { if (!running) return; frame(Math.min(clock.getDelta(), .05)); if (!reduce) requestAnimationFrame(loop); }
-    if (reduce) { frame(0); window.addEventListener("scroll", () => frame(0), { passive: true }); } else loop();
-    window.__paritas3d = { renderer, frame };
+    function loop() { if (!running || disposed) return; frame(Math.min(clock.getDelta(), .05)); if (!reduce) raf = requestAnimationFrame(loop); }
+    if (reduce) { frame(0); on(window, "scroll", () => frame(0), { passive: true }); } else loop();
+    window.__paritas3d = { renderer, frame }; cleanups.push(() => { delete window.__paritas3d; });
     requestAnimationFrame(() => canvas.classList.add("ready"));
   }
-  main().catch(err => { console.warn("3D scene unavailable:", err); document.documentElement.classList.add("no-gl"); });
+  main().catch(err => { if (disposed) return; console.warn("3D scene unavailable:", err); document.documentElement.classList.add("no-gl"); });
+
+  return function dispose() {
+    if (disposed) return;
+    disposed = true;
+    cancelAnimationFrame(raf);
+    for (const fn of cleanups.reverse()) { try { fn(); } catch (e) { /* already gone */ } }
+    cleanups.length = 0;
+    canvas.classList.remove("ready");
+    document.documentElement.classList.remove("no-gl");
+  };
 }

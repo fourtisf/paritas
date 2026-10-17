@@ -12,7 +12,7 @@
   --up:#3FD49A; --down:#F2677A; --warn:#F2A285;
   --s-reg:#3FD49A; --s-ext:#8C9BB4; --s-ovn:#5E6475; --s-wkd:#26262C;
   --v-vault:#F5F5F7; --v-pool:#8A8A93; --v-rfq:#6E8FB8;
-  --font:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font:var(--font-archivo),"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
   --bar:64px;
 }
 
