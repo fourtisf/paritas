@@ -20,7 +20,7 @@ if [ -f ~/.dburl ]; then
 fi
 sed -i "s|^CORS_ORIGINS=https://CHANGE_ME$|CORS_ORIGINS=https://paritas.live,https://www.paritas.live|" "$ENV"
 chmod 600 "$ENV"
-if grep -q CHANGE_ME "$ENV"; then
+if grep -q "^[^#]*CHANGE_ME" "$ENV"; then
   echo "$ENV still has CHANGE_ME. Run step 2 of docs/DEPLOY_VPS.md (database), then this script again." >&2
   exit 1
 fi
