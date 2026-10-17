@@ -37,6 +37,8 @@
    ```
    The script writes the `paritas` section of `deployments/4663.json`. Commit it, then check ownership on Blockscout: every owner is the timelock, the proposer is the Safe, the guardian is set.
 6. **Holidays** for the coming year set on-chain, matching `config/holidays.json`.
+Steps 7-9 as exact commands for paritas.live (Ubuntu 24.04, Nginx, TLS, pm2 under a `paritas` user) are in `docs/DEPLOY_VPS.md`.
+
 7. **API on the VPS:**
    ```bash
    cp apps/api/.env.mainnet.example apps/api/.env       # fill CHANGE_ME
