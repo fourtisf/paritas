@@ -4,6 +4,7 @@
  *  - GET /markets: Chainlink share price (priceWad), vault reserves and status
  *  - POST /quote without a wallet: what Uniswap (QuoterV2) and market makers would do for the order
  *  - GET /fills: the latest routed trades
+ *  - GET /prices: Pyth reference prices for the price strip while a market is not live (display only)
  * The vault is priced here with the contracts' BigInt math (packages/shared quote.ts) from the live price and
  * reserves, so it can also be shown for another session (the "Preview market open" switch and the router lab).
  */
@@ -83,6 +84,20 @@ export function useMarkets() {
   const q = useQuery({ queryKey: ["landing", "markets"], queryFn: () => getJson<ApiMarket[]>("/markets"), refetchInterval: 15_000, retry: false });
   const bySym = new Map((q.data ?? []).map((m) => [m.symbol, m]));
   return { bySym, ready: !!q.data, list: q.data ?? [] };
+}
+
+export interface RefPrice {
+  symbol: string;
+  price: number | null;
+  chg: number | null; // percent against the previous daily close
+  publishTime: number | null;
+  source: "pyth";
+}
+
+/** GET /prices: Pyth reference prices, for markets that are not live on this chain yet. Display only. */
+export function useRefPrices(enabled: boolean) {
+  const q = useQuery({ queryKey: ["landing", "prices"], queryFn: () => getJson<RefPrice[]>("/prices"), refetchInterval: 2_000, retry: false, enabled });
+  return new Map((q.data ?? []).map((p) => [p.symbol, p]));
 }
 
 export function useLatestFills(limit: number) {

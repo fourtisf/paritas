@@ -7,6 +7,7 @@ import { registerMaker } from "./lib/rfq";
 import { deployment } from "./lib/chain";
 import quoteRoutes from "./routes/quote";
 import readRoutes from "./routes/read";
+import { startRefPrices } from "./lib/refPrices";
 
 const app = Fastify({ logger: true });
 
@@ -44,3 +45,4 @@ app.register(async (scope) => {
 });
 
 await app.listen({ port: env.PORT, host: "0.0.0.0" });
+void startRefPrices(app.log); // runs for the life of the process

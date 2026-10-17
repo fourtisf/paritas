@@ -106,6 +106,7 @@ sudo -iu paritas pm2 status                     # paritas-api, paritas-indexer, 
 curl -sI https://paritas.live | head -1         # HTTP/2 200
 curl -s https://paritas.live/api/health         # {"ok":true}
 curl -s https://paritas.live/api/markets        # [] until the contracts are deployed
+curl -s https://paritas.live/api/prices         # Pyth reference prices for the price strip (display only)
 ```
 
 ## Update to the latest commit

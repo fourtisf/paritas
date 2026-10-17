@@ -112,6 +112,9 @@ p,dd,li{text-wrap:pretty}
 .marq-s{display:flex;gap:40px;padding:16px 20px;align-items:center}
 @keyframes marq{to{transform:translateX(-50%)}}
 .mq{display:inline-flex;align-items:center;gap:10px;white-space:nowrap;font-size:15px;color:var(--text-2)}
+.mq .num{transition:color .6s}
+.mq .num.tick-up{color:var(--up);transition:none}
+.mq .num.tick-down{color:var(--down);transition:none}
 .mq b{color:var(--text);font-weight:650}
 
 /* Sections */

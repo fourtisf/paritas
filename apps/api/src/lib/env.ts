@@ -11,6 +11,9 @@ const Env = z.object({
   RFQ_WAIT_MS: z.coerce.number().default(700),
   INDEXER_BATCH_BLOCKS: z.coerce.number().default(2000),
   INDEXER_CONFIRMATIONS: z.coerce.number().default(2),
+  // Reference prices for the website before a market is live (display only, lib/refPrices.ts). Empty turns them off.
+  PYTH_HERMES_URL: z.string().default("https://hermes.pyth.network"),
+  PYTH_BENCHMARKS_URL: z.string().default("https://benchmarks.pyth.network"),
 });
 
 export const env = Env.parse(process.env);

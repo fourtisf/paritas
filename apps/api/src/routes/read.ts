@@ -21,9 +21,13 @@ import {
 } from "@paritas/shared";
 import { chainNow, client, deployment, stockBySymbol } from "../lib/chain";
 import { big, db, json } from "../lib/db";
+import { refPrices } from "../lib/refPrices";
 
 export default async function readRoutes(app: FastifyInstance) {
   app.get("/health", async () => ({ ok: true }));
+
+  // Pyth reference prices for the website's price strip while a market is not live here. Display only.
+  app.get("/prices", async () => refPrices());
 
   app.get("/session", async () => {
     const now = await chainNow();
