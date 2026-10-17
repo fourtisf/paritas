@@ -25,8 +25,8 @@ The product owner is ALFA (Fourtis.io), and Michael implements production. Code 
 | `deployments/<chainId>.json` | Templates | 4663 is mainnet and 46630 is testnet; both are full of `TODO_VERIFY_ON_BLOCKSCOUT`. 31337 is written by the local deploy. |
 | `spec/` | Done | `generate_vectors.py` is an independent Python reference. `vectors/*.json` are checked by Solidity **and** TypeScript tests. |
 | `packages/shared/` | **Done and tested** | ABIs, addresses, session clock, vault math (BigInt), route builder, receipt decoder, error copy. |
-| `apps/api/` | Working skeleton | Fastify, Prisma, indexer and RFQ relay. `/quote` is complete. Other endpoints need data and polish. |
-| `apps/web/` | Scaffold | Next.js 14 with wagmi config, tokens, `useQuote`, `useSwap`, `useSession` and the extracted 3D modules. **The UI must be ported from `prototypes/`.** |
+| `apps/api/` | Working | Fastify, Prisma, indexer and RFQ relay. `/quote` returns the route plus each venue's cost lines (the ladder). `/stats` feeds Markets. Sessions, candles and RFQ expiry use chain time (`chainNow()`). Still to build: APR, live `ParamController` check, `/quote` rate limits. |
+| `apps/web/` | Ported | Platform (`/app/trade`, `markets`, `pool`, `portfolio`, `activity`, `governance`) and landing (`/`) ported 1:1 from `prototypes/`, on API + wagmi data. Platform CSS is `styles/platform.css` (verbatim), landing CSS is `styles/landing.css`. Addresses are read on the server (`lib/deployment.server.ts`). |
 | `prototypes/` | **Visual spec** | Two single-file HTML prototypes. They are what ALFA approved. Match them. |
 | `docs/screenshots/` | Visual spec | Every page at desktop (1440) and mobile (390). |
 
@@ -66,13 +66,18 @@ npm run smoke:local -w @paritas/shared               # TS math == chain, real sw
 npm run abi                                          # after any contract change: regenerate ABIs
 npm run vectors                                      # after any rule change: regenerate spec vectors
 
-# API + indexer (needs Postgres + Redis; copy apps/api/.env.example to .env)
-npm run db:generate -w @paritas/api && npm run db:migrate:dev -w @paritas/api
+# API + indexer (needs Postgres 16 + Redis 7; copy apps/api/.env.example to .env, which the dev scripts load)
+npm run db:generate -w @paritas/api && npm run db:migrate -w @paritas/api
 npm run api        # :4000
 npm run indexer
 
+# local market: keeps mock Chainlink feeds fresh (vaults go stale after 1h without it), moves prices and sends
+# random trades through /quote -> SwapRouter from anvil #3-#7; plus an RFQ maker signing as anvil #2
+npm run sim:local -w @paritas/shared                 # add -- --no-trades for prices only
+npm run maker:local -w @paritas/shared               # needs RFQ_MAKER_KEYS=local-maker in apps/api/.env
+
 # web
-npm run web        # :3000, set apps/web/.env.local from .env.example
+npm run web        # :3000, set apps/web/.env.local from .env.example. On 31337 "Local test wallet" (anvil #1) connects without a wallet app
 ```
 
 ## Definition of done for any change
@@ -88,11 +93,11 @@ npm run web        # :3000, set apps/web/.env.local from .env.example
 ## Order of work (what to do next)
 
 1. Run everything above locally. The smoke test proves the stack.
-2. Port the **platform** first (`prototypes/paritas-platform.html` to `apps/web/src/app/app/*`). Use real data:
+2. ~~Port the **platform**~~ (done) (`prototypes/paritas-platform.html` to `apps/web/src/app/app/*`). Use real data:
    - API (`/markets`, `/quote`, `/fills`, `/session`, `/governance`)
    - wagmi (balances, allowances, vault shares)
    - `useSwap` for the trade flow
    - Field mapping: `docs/DEMO_TO_PRODUCTION.md`.
-3. Port the **landing** (`prototypes/paritas-landing.html` to `apps/web/src/app/page.tsx`) with `three/landing-scene.js`.
+3. ~~Port the **landing**~~ (done) (`prototypes/paritas-landing.html` to `apps/web/src/app/page.tsx`) with `three/landing-scene.js`.
 4. Testnet rehearsal: fill `deployments/46630.json`, run `Deploy.s.sol`, run the indexer and the app against it.
 5. Mainnet only after the decisions in `docs/DECISIONS.md` are made by ALFA and an external audit is done.
