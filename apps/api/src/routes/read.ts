@@ -33,7 +33,8 @@ export default async function readRoutes(app: FastifyInstance) {
   });
 
   app.get("/markets", async () => {
-    const d = await deployment();
+    const d = await deployment().catch(() => null);
+    if (!d) return []; // not deployed on this chain yet: no markets to show (the website shows "–")
     const now = await chainNow();
     const since = new Date((now - 86_400) * 1000);
     const out = await Promise.all(

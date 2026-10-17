@@ -9,7 +9,8 @@ import { createContext, useContext, useEffect, useRef, useState, type CSSPropert
 import { useQueryClient } from "@tanstack/react-query";
 import { useAccount, useDisconnect } from "wagmi";
 import { SESSION_COPY } from "@paritas/shared";
-import { API_URL, CHAIN_ID } from "@/lib/wagmi";
+import { CHAIN_ID } from "@/lib/wagmi";
+import { apiWsUrl } from "@/lib/env";
 import { short } from "@/lib/format";
 import { useSession } from "@/hooks/useSession";
 import { useClockSeeded } from "@/hooks/useChainNow";
@@ -48,7 +49,7 @@ function LiveStream({ children }: { children: ReactNode }) {
     let stop = false;
     let retry: ReturnType<typeof setTimeout>;
     const open = () => {
-      ws = new WebSocket(API_URL.replace(/^http/, "ws") + "/stream");
+      ws = new WebSocket(apiWsUrl("/stream"));
       ws.onmessage = (ev) => {
         const msg = JSON.parse(String(ev.data));
         if (msg.channel !== "paritas:fills") return;

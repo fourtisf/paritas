@@ -103,9 +103,10 @@ export function useWalletlessQuote(a: { symbol: string; buy: boolean; amount: nu
   const amount = a.amount > 0 ? a.amount.toFixed(a.buy ? USDG_DECIMALS : 8) : null;
   const key = useDebounced(`${a.symbol}|${a.buy}|${amount}`, 250);
   const [symbol, side, amt] = key.split("|");
+  const listed = useMarkets().bySym.has(symbol); // nothing to quote before the market is deployed on this chain
   const q = useQuery({
     queryKey: ["landing", "quote", key],
-    enabled: amt !== "null",
+    enabled: amt !== "null" && listed,
     queryFn: () =>
       getJson<ApiQuote>("/quote", {
         method: "POST",

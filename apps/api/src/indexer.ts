@@ -138,7 +138,15 @@ async function sampleCandles(stocks: Record<string, { token: Hex; chainlinkFeed:
 }
 
 async function loop() {
-  const d = await deployment();
+  let d;
+  for (;;) {
+    d = await deployment().catch((e: Error) => {
+      console.error(`indexer waiting: ${e.message}`);
+      return null;
+    });
+    if (d) break;
+    await new Promise((r) => setTimeout(r, 60_000)); // e.g. mainnet before deployments/4663.json is filled
+  }
   const start = BigInt(d.paritas.deployedAtBlock || 0);
   for (;;) {
     try {

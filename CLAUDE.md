@@ -76,7 +76,7 @@ npm run indexer
 npm run sim:local -w @paritas/shared                 # add -- --no-trades for prices only
 npm run maker:local -w @paritas/shared               # needs RFQ_MAKER_KEYS=local-maker in apps/api/.env
 
-# web
+# web (production builds read apps/web/.env.production: mainnet 4663, API at /api; see docs/MAINNET.md)
 npm run web        # :3000, set apps/web/.env.local from .env.example. On 31337 "Local test wallet" (anvil #1) connects without a wallet app
 ```
 
@@ -100,4 +100,4 @@ npm run web        # :3000, set apps/web/.env.local from .env.example. On 31337 
    - Field mapping: `docs/DEMO_TO_PRODUCTION.md`.
 3. ~~Port the **landing**~~ (done) (`prototypes/paritas-landing.html` to `apps/web/src/app/page.tsx`) with `three/landing-scene.js`.
 4. Testnet rehearsal: fill `deployments/46630.json`, run `Deploy.s.sol`, run the indexer and the app against it.
-5. Mainnet only after the decisions in `docs/DECISIONS.md` are made by ALFA and an external audit is done.
+5. Mainnet only after the decisions in `docs/DECISIONS.md` are made by ALFA and an external audit is done. The config is ready and the launch steps are in `docs/MAINNET.md`.
