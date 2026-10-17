@@ -10,7 +10,9 @@
   "scripts": {
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "smoke:local": "tsx scripts/smoke-local.ts"
+    "smoke:local": "tsx scripts/smoke-local.ts",
+    "sim:local": "tsx scripts/sim-local.ts",
+    "maker:local": "tsx scripts/maker-local.ts"
   },
   "dependencies": {
     "viem": "2.57.7"

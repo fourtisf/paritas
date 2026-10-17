@@ -11,7 +11,7 @@
 import { randomUUID } from "node:crypto";
 import { verifyTypedData, type Hex } from "viem";
 import { rfqSettlementAbi, PROTOCOL } from "@paritas/shared";
-import { client, deployment, chainId } from "./chain";
+import { chainNow, client, deployment, chainId } from "./chain";
 import { env } from "./env";
 
 export interface RfqQuote {
@@ -74,7 +74,7 @@ export async function requestRfq(req: { taker: Hex; stock: Hex; takerBuys: boole
   if (makers.size === 0) return null;
   const d = await deployment();
   const id = randomUUID();
-  const now = BigInt(Math.floor(Date.now() / 1000));
+  const now = BigInt(Math.floor(await chainNow())); // RfqSettlement checks expiry against block.timestamp
   const expiresBefore = now + BigInt(PROTOCOL.rfq.quoteTtlSec) + 5n;
   const replies: Array<{ quote: RfqQuote; signature: Hex }> = [];
   pending.set(id, (msg) => {

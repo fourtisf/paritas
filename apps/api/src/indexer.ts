@@ -9,7 +9,7 @@
 import { parseAbi, type Hex, type Log } from "viem";
 import { Redis } from "ioredis";
 import { anchorVaultAbi, costBps, decodeRouteLogs, PROTOCOL } from "@paritas/shared";
-import { client, deployment } from "./lib/chain";
+import { chainNow, client, deployment } from "./lib/chain";
 import { db, big } from "./lib/db";
 import { env } from "./lib/env";
 
@@ -116,9 +116,9 @@ async function indexTimelock(from: bigint, to: bigint, timelock: Hex) {
   }
 }
 
-/** 15m / 1h / 6h candles from the oracle price, sampled each loop. */
+/** 15m / 1h / 6h candles from the oracle price, sampled each loop. Buckets use chain time, like fills do. */
 async function sampleCandles(stocks: Record<string, { token: Hex; chainlinkFeed: Hex }>) {
-  const now = Date.now();
+  const now = (await chainNow()) * 1000;
   for (const s of Object.values(stocks)) {
     const [, answer] = await client.readContract({ address: s.chainlinkFeed, abi: feedAbi, functionName: "latestRoundData" }).catch(() => [0n, 0n] as const);
     if (answer <= 0n) continue;

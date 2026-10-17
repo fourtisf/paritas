@@ -20,6 +20,19 @@ export async function stockBySymbol(sym: string) {
   return { symbol: sym, token: s.token, feed: s.chainlinkFeed, vault: d.paritas.vaults[sym] ?? null };
 }
 
+/**
+ * The contracts' clock: the latest block timestamp in seconds. Sessions, candles and "last 24 hours" use it so the
+ * API agrees with SessionLib on-chain. On mainnet it tracks the wall clock; on anvil it is whatever --timestamp set.
+ */
+let clock = { seenAt: 0, ts: 0 };
+export async function chainNow(): Promise<number> {
+  const age = (Date.now() - clock.seenAt) / 1000;
+  if (age < 1) return clock.ts + age;
+  const b = await client.getBlock();
+  clock = { seenAt: Date.now(), ts: Number(b.timestamp) };
+  return clock.ts;
+}
+
 export async function symbolOf(token: string) {
   const d = await deployment();
   return Object.entries(d.stocks).find(([, s]) => s.token.toLowerCase() === token.toLowerCase())?.[0] ?? null;

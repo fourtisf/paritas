@@ -7,8 +7,10 @@
 import { parseAbi, type Hex } from "viem";
 import {
   anchorVaultAbi,
+  oracleRouterAbi,
   quoteVault,
   vaultClipUsd,
+  isHolidayAt,
   PROTOCOL,
   SESSIONS,
   type VenueQuoter,
@@ -30,18 +32,32 @@ export interface Ctx {
   usdToWad: bigint;
   uniswapPoolFee: number;
   vault: Hex | null;
+  now: number; // chain time (chainNow)
 }
 
-export async function vaultQuoter(c: Ctx): Promise<VenueQuoter & { state?: unknown }> {
-  if (!c.vault) return { id: "vault", maxIn: 0n, quote: async () => null, reason: "Opens in the second wave" };
+/** The vault quoter also reports its spread inputs so /quote can itemize "Spread" and "Inventory adjustment". */
+export type VaultQuoter = VenueQuoter & { halfSpreadBps: number; spreadMulBps: number };
+
+export async function vaultQuoter(c: Ctx): Promise<VaultQuoter> {
+  const off = { id: "vault" as const, maxIn: 0n, quote: async () => null, halfSpreadBps: 0, spreadMulBps: 0 };
+  if (!c.vault) return { ...off, reason: "Opens in the second wave" };
   const [priceWad, reserveStock, reserveUsd, session, tier, sp, open] = await client.readContract({
     address: c.vault,
     abi: anchorVaultAbi,
     functionName: "state",
   });
   if (!open) {
-    return { id: "vault", maxIn: 0n, quote: async () => null, reason: SESSIONS[session] === "closed" ? "Paused for the weekend" : "Paused" };
+    const closed = SESSIONS[session] === "closed";
+    return { ...off, reason: closed ? (isHolidayAt(c.now) ? "Paused for the market holiday" : "Paused for the weekend") : "Paused" };
   }
+  // state() does not check the vault's oracle age or the issuer's price pause; swap() does. Check them here so we
+  // never offer a vault leg that would revert.
+  const d = await deployment();
+  const fresh = await client
+    .readContract({ address: d.paritas.oracleRouter, abi: oracleRouterAbi, functionName: "vaultPrice", args: [c.stock, BigInt(PROTOCOL.oracle.vaultMaxAgeSec)] })
+    .then(() => null)
+    .catch((e: unknown) => (String(e).includes("OraclePausedByIssuer") ? "Issuer paused its price" : "Waiting for a fresh Chainlink price"));
+  if (fresh) return { ...off, reason: fresh };
   const pool = { priceWad, reserveStock, reserveUsd, stockUnit: c.stockUnit, usdToWad: c.usdToWad };
   const pricing = {
     halfSpreadBps: BigInt(tier.halfSpreadBps),
@@ -54,6 +70,8 @@ export async function vaultQuoter(c: Ctx): Promise<VenueQuoter & { state?: unkno
   const maxIn = c.buy ? clipWad / c.usdToWad : (clipWad * c.stockUnit) / priceWad;
   return {
     id: "vault",
+    halfSpreadBps: Number(tier.halfSpreadBps),
+    spreadMulBps: Number(sp.spreadMulBps),
     maxIn, // inventory is checked per quote below
     quote: async (amountIn) => {
       const r = quoteVault(pool, pricing, c.buy, amountIn);
