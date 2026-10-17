@@ -1,0 +1,56 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["dependencies"]
+test = "test"
+script = "script"
+solc_version = "0.8.26"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+# Shared files live at the repo root so contracts, API and web read the same numbers.
+fs_permissions = [
+  { access = "read", path = "../config" },
+  { access = "read", path = "../spec" },
+  { access = "read-write", path = "../deployments" },
+]
+
+remappings = [
+    "@openzeppelin/contracts/=dependencies/@openzeppelin-contracts-5.2.0/",
+    "forge-std/=dependencies/forge-std-1.9.7/src/",
+]
+
+[profile.default.fuzz]
+runs = 512
+
+[profile.ci.fuzz]
+runs = 5000
+
+[profile.default.fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
+
+[dependencies]
+forge-std = "1.9.7"
+"@openzeppelin-contracts" = "5.2.0"
+
+[soldeer]
+remappings_generate = false
+remappings_regenerate = false
+
+[rpc_endpoints]
+robinhood = "${ROBINHOOD_RPC_URL}"
+robinhood_testnet = "${ROBINHOOD_TESTNET_RPC_URL}"
+local = "http://127.0.0.1:8545"
+
+[etherscan]
+# Blockscout verification. Check the API URL on the explorer before use.
+robinhood = { key = "${BLOCKSCOUT_API_KEY}", url = "https://robinhoodchain.blockscout.com/api", chain = 4663 }
+robinhood_testnet = { key = "${BLOCKSCOUT_API_KEY}", url = "https://explorer.testnet.chain.robinhood.com/api", chain = 46630 }
+
+[lint]
+lint_on_build = false  # run `forge lint` explicitly in CI
+# casts are bounded by checks right before them; naming follows the spec names
+exclude_lints = ["unsafe-typecast", "mixed-case-variable", "mixed-case-function", "pascal-case-struct", "screaming-snake-case-immutable"]

@@ -1,0 +1,28 @@
+{
+  "name": "@paritas/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@paritas/shared": "0.1.0",
+    "@tanstack/react-query": "5.104.3",
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "three": "0.160.1",
+    "viem": "2.57.7",
+    "wagmi": "2.19.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@types/three": "0.160.0",
+    "typescript": "5.9.3"
+  }
+}

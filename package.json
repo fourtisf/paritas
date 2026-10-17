@@ -1,0 +1,22 @@
+{
+  "name": "paritas",
+  "private": true,
+  "description": "Paritas: best price on every Robinhood Chain stock token. Monorepo: contracts (Foundry), packages/shared, apps/api, apps/web.",
+  "workspaces": [
+    "packages/shared",
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "abi": "node scripts/export-abis.mjs",
+    "vectors": "python3 spec/generate_vectors.py",
+    "test": "npm run test -w @paritas/shared",
+    "api": "npm run dev -w @paritas/api",
+    "indexer": "npm run indexer -w @paritas/api",
+    "web": "npm run dev -w @paritas/web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

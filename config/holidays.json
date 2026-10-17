@@ -1,0 +1,127 @@
+{
+  "_comment": "NYSE full closures and 1:00 pm ET early closes, from NYSE Group's calendar announced 23 Dec 2025 (businesswire.com). Day index = days since 1970-01-01 in New York local date; SessionController.setHolidays/setEarlyCloses take these numbers. Push next year's dates through the timelock at least a week ahead. Confirm Robinhood Chain stock tokens follow the NYSE calendar (docs/DECISIONS.md). holidayDays / earlyCloseDays are the flat lists the deploy script reads; keep them in sync with the dated lists.",
+  "source": "https://www.businesswire.com/news/home/20251223981478/en/NYSE-Group-Announces-2026-2027-and-2028-Holiday-and-Early-Closings-Calendar",
+  "holidays": [
+    {
+      "date": "2026-01-01",
+      "day": 20454
+    },
+    {
+      "date": "2026-01-19",
+      "day": 20472
+    },
+    {
+      "date": "2026-02-16",
+      "day": 20500
+    },
+    {
+      "date": "2026-04-03",
+      "day": 20546
+    },
+    {
+      "date": "2026-05-25",
+      "day": 20598
+    },
+    {
+      "date": "2026-06-19",
+      "day": 20623
+    },
+    {
+      "date": "2026-07-03",
+      "day": 20637
+    },
+    {
+      "date": "2026-09-07",
+      "day": 20703
+    },
+    {
+      "date": "2026-11-26",
+      "day": 20783
+    },
+    {
+      "date": "2026-12-25",
+      "day": 20812
+    },
+    {
+      "date": "2027-01-01",
+      "day": 20819
+    },
+    {
+      "date": "2027-01-18",
+      "day": 20836
+    },
+    {
+      "date": "2027-02-15",
+      "day": 20864
+    },
+    {
+      "date": "2027-03-26",
+      "day": 20903
+    },
+    {
+      "date": "2027-05-31",
+      "day": 20969
+    },
+    {
+      "date": "2027-06-18",
+      "day": 20987
+    },
+    {
+      "date": "2027-07-05",
+      "day": 21004
+    },
+    {
+      "date": "2027-09-06",
+      "day": 21067
+    },
+    {
+      "date": "2027-11-25",
+      "day": 21147
+    },
+    {
+      "date": "2027-12-24",
+      "day": 21176
+    }
+  ],
+  "earlyCloses": [
+    {
+      "date": "2026-11-27",
+      "day": 20784
+    },
+    {
+      "date": "2026-12-24",
+      "day": 20811
+    },
+    {
+      "date": "2027-11-26",
+      "day": 21148
+    }
+  ],
+  "holidayDays": [
+    20454,
+    20472,
+    20500,
+    20546,
+    20598,
+    20623,
+    20637,
+    20703,
+    20783,
+    20812,
+    20819,
+    20836,
+    20864,
+    20903,
+    20969,
+    20987,
+    21004,
+    21067,
+    21147,
+    21176
+  ],
+  "earlyCloseDays": [
+    20784,
+    20811,
+    21148
+  ]
+}

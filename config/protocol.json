@@ -1,0 +1,30 @@
+{
+  "_comment": "Single source of truth for protocol parameters. Read by contracts/script/Deploy.s.sol, packages/shared (API + web) and the docs. Units: bps = 1/10000, mul = bps where 10000 = x1.0, usd = whole US dollars. Changing a value after deploy = a 48h timelock proposal, then update this file in the same PR.",
+  "version": 1,
+  "fees": { "protocolFeeBps": 2, "rfqFeeBps": 2, "spreadShareBps": 1000 },
+  "rfq": { "minUsd": 25000, "maxUsd": 2000000, "quoteTtlSec": 30 },
+  "oracle": { "vaultMaxAgeSec": 3600, "bandMaxAgeSec": 345600, "sequencerGraceSec": 3600 },
+  "tiers": {
+    "A": { "index": 0, "halfSpreadBps": 10, "skewBps": 15, "bandBps": 75, "clipUsd": 50000, "capUsd": 2500000 },
+    "B": { "index": 1, "halfSpreadBps": 20, "skewBps": 25, "bandBps": 150, "clipUsd": 20000, "capUsd": 1000000 },
+    "C": { "index": 2, "halfSpreadBps": 40, "skewBps": 50, "bandBps": 300, "clipUsd": 5000, "capUsd": 400000 }
+  },
+  "sessions": {
+    "regular":   { "index": 0, "spreadMulBps": 10000, "clipMulBps": 10000, "bandMulBps": 10000, "vaultOpen": true },
+    "extended":  { "index": 1, "spreadMulBps": 15000, "clipMulBps": 7500,  "bandMulBps": 10000, "vaultOpen": true },
+    "overnight": { "index": 2, "spreadMulBps": 20000, "clipMulBps": 5000,  "bandMulBps": 10000, "vaultOpen": true },
+    "closed":    { "index": 3, "spreadMulBps": 0,     "clipMulBps": 0,     "bandMulBps": 20000, "vaultOpen": false }
+  },
+  "governance": { "timelockDelaySec": 172800, "multisigThreshold": 3, "multisigSigners": 5 },
+  "eligibility": { "enforcedOnMainnet": true, "attestationTtlDays": 90 },
+  "markets": [
+    { "symbol": "NVDAx", "name": "NVIDIA",           "tier": "A", "uniswapPoolFee": 500,  "wave": 1 },
+    { "symbol": "SPYx",  "name": "SPDR S&P 500 ETF", "tier": "A", "uniswapPoolFee": 500,  "wave": 1 },
+    { "symbol": "AAPLx", "name": "Apple",            "tier": "A", "uniswapPoolFee": 500,  "wave": 1 },
+    { "symbol": "QQQx",  "name": "Invesco QQQ",      "tier": "A", "uniswapPoolFee": 500,  "wave": 1 },
+    { "symbol": "MSFTx", "name": "Microsoft",        "tier": "A", "uniswapPoolFee": 500,  "wave": 1 },
+    { "symbol": "TSLAx", "name": "Tesla",            "tier": "B", "uniswapPoolFee": 3000, "wave": 1 },
+    { "symbol": "AMZNx", "name": "Amazon",           "tier": "B", "uniswapPoolFee": 3000, "wave": 2 },
+    { "symbol": "PLTRx", "name": "Palantir",         "tier": "C", "uniswapPoolFee": 3000, "wave": 2 }
+  ]
+}

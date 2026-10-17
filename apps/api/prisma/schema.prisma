@@ -1,0 +1,116 @@
+// Postgres schema for the indexer and the API. Amounts are raw token units stored as Decimal(78,0)
+// (uint256 fits); prices are WAD (18 decimals) also as Decimal(78,0). Convert with BigInt(x.toFixed()).
+// Never store floats for money. costBps is the only float: it is a display value derived from integers.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// One SwapRouter.RouteExecuted event = one trade = one receipt in the app.
+model Route {
+  id             String   @id // "<chainId>:<routeId>"
+  chainId        Int
+  routeId        Decimal  @db.Decimal(78, 0)
+  txHash         String
+  blockNumber    BigInt
+  timestamp      DateTime
+  trader         String // lowercase address
+  recipient      String
+  stock          String // token address
+  buy            Boolean
+  amountIn       Decimal  @db.Decimal(78, 0)
+  amountOut      Decimal  @db.Decimal(78, 0)
+  protocolFee    Decimal  @db.Decimal(78, 0)
+  oraclePriceWad Decimal  @db.Decimal(78, 0)
+  session        String // regular | extended | overnight | closed
+  notionalUsd    Float // display only
+  costBps        Float // all-in cost vs oracle incl. protocol fee, display only
+  fills          Fill[]
+
+  @@index([trader, timestamp])
+  @@index([stock, timestamp])
+  @@index([timestamp])
+}
+
+/// One SwapRouter.Fill event = one leg of a route.
+model Fill {
+  id        String  @id // "<txHash>:<logIndex>"
+  routeKey  String
+  route     Route   @relation(fields: [routeKey], references: [id])
+  legIndex  Int
+  venue     String // vault | pool | rfq
+  amountIn  Decimal @db.Decimal(78, 0)
+  amountOut Decimal @db.Decimal(78, 0)
+  priceWad  Decimal @db.Decimal(78, 0)
+  costBps   Float
+
+  @@index([routeKey])
+}
+
+/// AnchorVault.Sync after every swap / deposit / withdraw.
+model VaultSnapshot {
+  id           BigInt   @id @default(autoincrement())
+  vault        String
+  stock        String
+  blockNumber  BigInt
+  timestamp    DateTime
+  reserveStock Decimal  @db.Decimal(78, 0)
+  reserveUsd   Decimal  @db.Decimal(78, 0)
+
+  @@index([vault, timestamp])
+}
+
+/// AnchorVault.Deposit / Withdraw, for "Your liquidity" and fees earned.
+model VaultFlow {
+  id          String   @id // "<txHash>:<logIndex>"
+  vault       String
+  kind        String // deposit | withdraw
+  owner       String
+  receiver    String
+  shares      Decimal  @db.Decimal(78, 0)
+  usdAmount   Decimal  @db.Decimal(78, 0)
+  stockAmount Decimal  @db.Decimal(78, 0)
+  valueWad    Decimal? @db.Decimal(78, 0)
+  blockNumber BigInt
+  timestamp   DateTime
+
+  @@index([owner, timestamp])
+  @@index([vault, timestamp])
+}
+
+/// Oracle price candles built by the indexer from Chainlink rounds (and fills between rounds).
+model Candle {
+  stock String
+  tf    String // 15m | 1h | 6h
+  t     DateTime
+  o     Decimal  @db.Decimal(78, 0)
+  h     Decimal  @db.Decimal(78, 0)
+  l     Decimal  @db.Decimal(78, 0)
+  c     Decimal  @db.Decimal(78, 0)
+
+  @@id([stock, tf, t])
+}
+
+/// TimelockController CallScheduled / CallExecuted / Cancelled, for the Governance page.
+model GovernanceOp {
+  id          String    @id // operation id (bytes32)
+  target      String
+  data        String
+  status      String // scheduled | ready | executed | cancelled
+  title       String? // filled from docs/governance-titles.json or by hand
+  scheduledAt DateTime
+  readyAt     DateTime
+  executedAt  DateTime?
+  txHash      String
+}
+
+/// Where each indexer stream has reached.
+model IndexerCursor {
+  name  String @id
+  block BigInt
+}

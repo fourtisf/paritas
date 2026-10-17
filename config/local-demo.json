@@ -1,0 +1,15 @@
+{
+  "_comment": "Local anvil chain only (contracts/script/DeployLocal.s.sol). Same numbers as the prototype's MARKETS array so the local app looks like the demo. Never used on testnet or mainnet.",
+  "anvilTimestampHint": 1792504800,
+  "markets": {
+    "NVDAx": { "price8": 18240000000, "seedTvlUsd": 1284000, "tokenShareBps": 5180 },
+    "SPYx":  { "price8": 66230000000, "seedTvlUsd": 1462000, "tokenShareBps": 4930 },
+    "AAPLx": { "price8": 24715000000, "seedTvlUsd": 846000,  "tokenShareBps": 5060 },
+    "QQQx":  { "price8": 59840000000, "seedTvlUsd": 612000,  "tokenShareBps": 4970 },
+    "MSFTx": { "price8": 52170000000, "seedTvlUsd": 418000,  "tokenShareBps": 5120 },
+    "TSLAx": { "price8": 43180000000, "seedTvlUsd": 196000,  "tokenShareBps": 4640 },
+    "AMZNx": { "price8": 23190000000, "seedTvlUsd": 0,       "tokenShareBps": 5000 },
+    "PLTRx": { "price8": 17625000000, "seedTvlUsd": 0,       "tokenShareBps": 5000 }
+  },
+  "uniswapCostBps": { "A": 12, "B": 38, "C": 45 }
+}

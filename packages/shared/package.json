@@ -1,0 +1,23 @@
+{
+  "name": "@paritas/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Code shared by the API, the indexer and the web app: ABIs, addresses, session clock, vault math, route builder.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "smoke:local": "tsx scripts/smoke-local.ts"
+  },
+  "dependencies": {
+    "viem": "2.57.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "_comment": "Robinhood Chain mainnet. Every TODO must be replaced with an address you opened on https://robinhoodchain.blockscout.com and checked (contract name, verified source, symbol/decimals). Deploy.s.sol refuses to run while any TODO or zero address is left. Never copy addresses from blog posts or AI output.",
+  "chainId": 4663,
+  "rpc": "https://rpc.mainnet.chain.robinhood.com",
+  "explorer": "https://robinhoodchain.blockscout.com",
+  "external": {
+    "usdg": {
+      "address": "TODO_VERIFY_ON_BLOCKSCOUT",
+      "expect": "Paxos USDG, symbol USDG, 6 decimals (check)"
+    },
+    "uniswapV3SwapRouter02": {
+      "address": "TODO_VERIFY_ON_BLOCKSCOUT",
+      "expect": "Uniswap SwapRouter02 from Uniswap's official deployments page for this chain"
+    },
+    "uniswapV3Factory": {
+      "address": "TODO_VERIFY_ON_BLOCKSCOUT",
+      "expect": "Uniswap v3 factory, used by the API to find pools"
+    },
+    "uniswapQuoterV2": {
+      "address": "TODO_VERIFY_ON_BLOCKSCOUT",
+      "expect": "Uniswap QuoterV2, used by the API to price Uniswap legs"
+    },
+    "sequencerUptimeFeed": {
+      "address": "TODO_VERIFY_ON_BLOCKSCOUT",
+      "expect": "Chainlink L2 sequencer uptime feed for Robinhood Chain. If Chainlink does not publish one, set to 0x0000000000000000000000000000000000000000 and record the decision in docs/DECISIONS.md"
+    },
+    "stocks": {
+      "NVDAx": {
+        "token": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "chainlinkFeed": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "feedHeartbeatSec": 0,
+        "useUiMultiplier": false,
+        "checkOraclePaused": true
+      },
+      "SPYx": {
+        "token": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "chainlinkFeed": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "feedHeartbeatSec": 0,
+        "useUiMultiplier": false,
+        "checkOraclePaused": true
+      },
+      "AAPLx": {
+        "token": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "chainlinkFeed": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "feedHeartbeatSec": 0,
+        "useUiMultiplier": false,
+        "checkOraclePaused": true
+      },
+      "QQQx": {
+        "token": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "chainlinkFeed": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "feedHeartbeatSec": 0,
+        "useUiMultiplier": false,
+        "checkOraclePaused": true
+      },
+      "MSFTx": {
+        "token": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "chainlinkFeed": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "feedHeartbeatSec": 0,
+        "useUiMultiplier": false,
+        "checkOraclePaused": true
+      },
+      "TSLAx": {
+        "token": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "chainlinkFeed": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "feedHeartbeatSec": 0,
+        "useUiMultiplier": false,
+        "checkOraclePaused": true
+      },
+      "AMZNx": {
+        "token": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "chainlinkFeed": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "feedHeartbeatSec": 0,
+        "useUiMultiplier": false,
+        "checkOraclePaused": true
+      },
+      "PLTRx": {
+        "token": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "chainlinkFeed": "TODO_VERIFY_ON_BLOCKSCOUT",
+        "feedHeartbeatSec": 0,
+        "useUiMultiplier": false,
+        "checkOraclePaused": true
+      }
+    }
+  },
+  "roles": {
+    "multisig": "TODO_VERIFY_ON_BLOCKSCOUT",
+    "guardian": "TODO_VERIFY_ON_BLOCKSCOUT",
+    "attester": "TODO_VERIFY_ON_BLOCKSCOUT",
+    "treasury": "TODO_VERIFY_ON_BLOCKSCOUT"
+  },
+  "paritas": {}
+}

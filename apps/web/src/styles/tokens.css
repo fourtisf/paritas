@@ -1,0 +1,27 @@
+/* Design tokens, copied exactly from prototypes/paritas-platform.html (:root). Premium black.
+   Do not invent new colours: ALFA rejected the colourful/holographic look and the black-and-gold and white/light looks.
+   Every component class lives in the prototypes; port them from there (docs/DESIGN_SYSTEM.md). */
+:root{
+  --bg:#050506; --bg-2:#0A0A0C; --s1:#0F0F12; --s2:#16161A; --s3:#1F1F24;
+  --line:#1E1E23; --line-2:#2C2C33;
+  --text:#F5F5F7; --text-2:#A3A3AC; --muted:#6C6C76;
+  --cyan:#8C9BB4; --lav:#D9D9DF; --pink:#8A8A93;
+  --holo:linear-gradient(180deg,#FFFFFF 0%,#D4D4DA 100%);
+  --chrome:linear-gradient(90deg,#1F1F24 0%,#8A8A93 20%,#F5F5F7 35%,#8A8A93 50%,#1F1F24 70%,#8A8A93 85%,#1F1F24 100%);
+  --ink:#050506;
+  --up:#3FD49A; --down:#F2677A; --warn:#F2A285;
+  --s-reg:#3FD49A; --s-ext:#8C9BB4; --s-ovn:#5E6475; --s-wkd:#26262C;
+  --v-vault:#F5F5F7; --v-pool:#8A8A93; --v-rfq:#6E8FB8;
+  --font:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bar:64px;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--lav);outline-offset:2px;border-radius:8px}
+.num{font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)} .muted{color:var(--muted)} .t2{color:var(--text-2)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
