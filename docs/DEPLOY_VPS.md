@@ -8,7 +8,7 @@ The web app, API and indexer on one Ubuntu 24.04 VPS behind Nginx with Let's Enc
   - `/api/markets` answers `[]`
   - the indexer waits
 
-Run the blocks in order. Blocks 1, 2 and 4 run as `root`. Block 3 runs as the `paritas` user.
+Run the blocks in order, all from a `root` shell.
 
 ## 1. System (root)
 
@@ -39,27 +39,26 @@ echo "postgresql://paritas:$DBPASS@127.0.0.1:5432/paritas" > /home/paritas/.dbur
 chown paritas:paritas /home/paritas/.dburl && chmod 600 /home/paritas/.dburl
 ```
 
-## 3. App (as `paritas`: `sudo -iu paritas`)
+## 3. App (root runs it as `paritas`)
+
+`deploy/vps.sh` refuses to run as root. It has no `exit` that could close the SSH session, and it is safe to run again.
+
+What it does:
+- pulls and installs
+- creates `apps/api/.env` from `.env.mainnet.example` and moves in the database URL from step 2
+- runs the migrations and builds the web app
+- (re)starts `paritas-api`, `paritas-indexer` and `paritas-web` under pm2
 
 ```bash
-git clone -b claude/new-session-pc95l7 https://github.com/fourtisf/paritas.git ~/paritas
-cd ~/paritas
-npm ci
-cp apps/api/.env.mainnet.example apps/api/.env
-sed -i "s|^DATABASE_URL=.*|DATABASE_URL=$(cat ~/.dburl)|; s|^CORS_ORIGINS=.*|CORS_ORIGINS=https://paritas.live,https://www.paritas.live|" apps/api/.env
-rm ~/.dburl && chmod 600 apps/api/.env
-npm run db:generate -w @paritas/api
-npm run db:migrate -w @paritas/api
-npm run build -w @paritas/web
-pm2 start apps/api/ecosystem.config.cjs
-pm2 start "npm run start -w @paritas/web" --name paritas-web
-pm2 save
-exit
+sudo -iu paritas git clone -b claude/new-session-pc95l7 https://github.com/fourtisf/paritas.git /home/paritas/paritas
+sudo -iu paritas bash /home/paritas/paritas/deploy/vps.sh
 ```
+
+Use full paths. In a root shell, `~` means `/root`, not `/home/paritas`.
 
 Notes:
 - Do not create `apps/web/.env.local` here: it overrides `.env.production` (mainnet).
-- The WalletConnect project id goes in `apps/web/.env.production.local`, followed by a rebuild.
+- The WalletConnect project id goes in `apps/web/.env.production.local`, followed by running the script again.
 
 ## 4. Boot, Nginx and TLS (root)
 
@@ -112,7 +111,7 @@ curl -s https://paritas.live/api/markets        # [] until the contracts are dep
 ## Update to the latest commit
 
 ```bash
-sudo -iu paritas bash -c 'cd ~/paritas && git pull && npm ci && npm run db:generate -w @paritas/api && npm run db:migrate -w @paritas/api && npm run build -w @paritas/web && pm2 restart all'
+sudo -iu paritas bash /home/paritas/paritas/deploy/vps.sh
 ```
 
 ## Logs
