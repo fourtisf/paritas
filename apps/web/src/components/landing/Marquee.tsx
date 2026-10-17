@@ -21,7 +21,7 @@ function Tick({ v }: { v: number }) {
 
 /**
  * Price strip under the hero. A live market shows its Chainlink share price from GET /markets. A market that is not
- * live on this chain yet shows the Pyth reference price from GET /prices, and the strip says so.
+ * live on this chain yet shows the Finnhub reference price from GET /prices, and the strip says so.
  */
 export function Marquee() {
   const { bySym } = useMarkets();
@@ -29,9 +29,9 @@ export function Marquee() {
   const ref = useRefPrices(pending);
   const rows = MARKETS.map((c) => {
     const m = bySym.get(c.symbol);
-    if (m) return { c, price: m.mid > 0 ? m.mid : null, chg: m.mid > 0 ? m.chg : null, pyth: false };
+    if (m) return { c, price: m.mid > 0 ? m.mid : null, chg: m.mid > 0 ? m.chg : null, ref: false };
     const r = ref.get(c.symbol);
-    return { c, price: r?.price ?? null, chg: r?.chg ?? null, pyth: r?.price != null };
+    return { c, price: r?.price ?? null, chg: r?.chg ?? null, ref: r?.price != null };
   });
   const items = (
     <>
@@ -43,7 +43,7 @@ export function Marquee() {
           {chg != null && <span className={chg >= 0 ? "up" : "down"}>{chg >= 0 ? "+" : "−"}{nf(Math.abs(chg))}%</span>}
         </span>
       ))}
-      <span className="mq muted">{rows.some((r) => r.pyth) ? "Reference prices from Pyth" : "Share prices from Chainlink"}</span>
+      <span className="mq muted">{rows.some((r) => r.ref) ? "Reference prices from Finnhub" : "Share prices from Chainlink"}</span>
     </>
   );
   return (

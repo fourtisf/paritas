@@ -26,7 +26,7 @@ import { refPrices } from "../lib/refPrices";
 export default async function readRoutes(app: FastifyInstance) {
   app.get("/health", async () => ({ ok: true }));
 
-  // Pyth reference prices for the website's price strip while a market is not live here. Display only.
+  // Finnhub reference prices for the website's price strip while a market is not live here. Display only.
   app.get("/prices", async () => refPrices());
 
   app.get("/session", async () => {
