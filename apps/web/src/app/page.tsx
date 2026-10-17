@@ -6,7 +6,7 @@ import { Effects } from "@/components/landing/Effects";
 import { ExampleReceipt } from "@/components/landing/ExampleReceipt";
 import { HoursNow, TzName, Week } from "@/components/landing/Hours";
 import { LiveList } from "@/components/landing/LiveList";
-import { Mark } from "@/components/landing/Mark";
+import { SealMark } from "@/components/brand/Seal";
 import { Marquee } from "@/components/landing/Marquee";
 import { Nav } from "@/components/landing/Nav";
 import { Poster } from "@/components/landing/Poster";
@@ -41,7 +41,7 @@ export default function Landing() {
       <Poster />
       <div className="veil" aria-hidden="true"></div>
 
-      <Nav logo={<Mark />} />
+      <Nav logo={<SealMark paint="url(#silver)" className="js-mark" />} />
 
       <div className="page">
         <main id="main">
@@ -221,7 +221,7 @@ export default function Landing() {
         <footer className="footer">
           <div className="wrap">
             <div className="foot">
-              <a className="logo" href="#top" aria-label="Paritas home"><Mark /><b>Paritas</b></a>
+              <a className="logo" href="#top" aria-label="Paritas home"><SealMark paint="url(#silver)" className="js-mark" /><b>Paritas</b></a>
               <ul className="foot-l"><li><a href="/app/trade">App</a></li><li><a href="#faq">FAQ</a></li><li><a href="#">GitHub</a></li><li><a href="#">X</a></li><li><a href="#">Blockscout</a></li><li><a href="mailto:hello@example.com">Contact</a></li></ul>
             </div>
             <p className="disc">Paritas is an independent interface and is not affiliated with, operated by or endorsed by Robinhood Markets, Inc. or its affiliates. Stock Tokens are tokenized debt securities issued by Robinhood Assets (Jersey) Limited. They are not available in the United States or to US persons and are restricted in other jurisdictions. Prices on this page come from Chainlink and Uniswap and are for information only. Nothing here is investment advice. Trading tokenized securities carries risk, including loss of the amount you trade.</p>

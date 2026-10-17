@@ -16,7 +16,8 @@ import { useSession } from "@/hooks/useSession";
 import { useClockSeeded } from "@/hooks/useChainNow";
 import { useWallet } from "@/hooks/useWallet";
 import { Icon, type IconName } from "./Icon";
-import { Mark, SvgDefs } from "./Guilloche";
+import { SvgDefs } from "./Guilloche";
+import { SealMark } from "@/components/brand/Seal";
 import { UIProvider, useUI } from "./ui";
 import { SettingsProvider, useSettings } from "./settings";
 import { DialFace, DialPop } from "./session";
@@ -172,7 +173,7 @@ function Bar() {
       <header className="bar">
         {/* plain <a>: the landing page has its own stylesheet, so leave the app with a full page load */}
         <a className="logo" href="/" aria-label="Paritas website">
-          <Mark />
+          <SealMark />
           <b>Paritas</b>
         </a>
         {pill && (

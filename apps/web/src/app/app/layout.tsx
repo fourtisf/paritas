@@ -5,7 +5,8 @@ import { CHAIN_ID } from "@/lib/env";
 import { loadDeployment } from "@/lib/deployment.server";
 import { DeploymentProvider } from "@/components/platform/deployment";
 import { Shell } from "@/components/platform/Shell";
-import { Mark, Rosette, SvgDefs } from "@/components/platform/Guilloche";
+import { Rosette, SvgDefs } from "@/components/platform/Guilloche";
+import { SealMark } from "@/components/brand/Seal";
 import { CHAINS } from "@paritas/shared";
 
 export const metadata: Metadata = { title: "Paritas App" };
@@ -33,7 +34,7 @@ function NotLive({ detail }: { detail: string | null }) {
       <SvgDefs />
       <header className="bar">
         <a className="logo" href="/" aria-label="Paritas website">
-          <Mark />
+          <SealMark />
           <b>Paritas</b>
         </a>
       </header>

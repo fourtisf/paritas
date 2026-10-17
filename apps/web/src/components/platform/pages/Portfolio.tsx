@@ -17,7 +17,8 @@ import { useSettings } from "../settings";
 import { useUI } from "../ui";
 import { Icon } from "../Icon";
 import { Tok } from "../Tok";
-import { Mark, MarkPaths, Rosette } from "../Guilloche";
+import { MarkPaths, Rosette } from "../Guilloche";
+import { SealMark } from "@/components/brand/Seal";
 import { AreaChart } from "../charts";
 import { CHAIN_NAME, ConnectModal } from "../modals";
 import { cssVar, SideTxt, VenueChip } from "../bits";
@@ -117,7 +118,7 @@ function Connected({ address }: { address: `0x${string}` }) {
           <span className="shine" />
           <div className="pcard-top">
             <span style={{ display: "flex", alignItems: "center", gap: 8, fontStretch: "125%", fontWeight: 700 }}>
-              <Mark w={3} size={22} />
+              <SealMark size={22} />
               Paritas
             </span>
             {w.eligible === false ? (

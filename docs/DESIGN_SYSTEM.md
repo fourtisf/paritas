@@ -42,6 +42,22 @@ These are in `apps/web/src/styles/tokens.css`, copied exactly from the prototype
   - Numbers use `font-variant-numeric: tabular-nums` (`.num`).
 - **Texture:** a 5% SVG noise on `body::before`.
 
+## Logo
+ALFA chose the **guilloché seal** (logo round 2, concept F). It is the site's guilloché rosette inside a reeded ring, with the tagline on the ring. It replaces the bare rosette mark that the prototypes and `docs/screenshots/` still show.
+
+- **In the app and landing (16–48 px):** `SealMark` (`components/brand/Seal.tsx`) is the double ring, the rosette and a white heart, with no ring text. The wordmark stays the live text "Paritas" in Archivo at `font-stretch: 125%`.
+- **Favicon:** `app/icon.svg` (small seal on a black disc). The iOS icon is `app/apple-icon.png` (full seal, 180 px).
+- **Files in `public/brand/` (served at `/brand/...`):**
+  - `paritas-seal.svg`: full seal, silver, transparent. The ring text is outlined, so no font is needed.
+  - `paritas-seal-ink.svg`: the same seal in ink `#050506`, for light backgrounds only (print, partner pages).
+  - `paritas-mark.svg`: the small seal.
+  - `paritas-seal-2048.png`: full seal, transparent.
+  - `paritas-x-profile.png`: X profile photo, 1000 × 1000. X crops it to a circle, so the reeded edge sits at 86% of the radius.
+- **Rules:**
+  - Do not recolour the seal, put it on a colour, or add effects (glow, 3D, gold).
+  - Use the full seal at 96 px and up. Below that, use the small seal.
+  - The ring text reads "PARITAS · THE BEST PRICE ON EVERY STOCK TOKEN · ROBINHOOD CHAIN".
+
 ## Components
 Port these from the prototype CSS; the class names are already there:
 - top bar: logo, nav pill, session dial, settings, connect
