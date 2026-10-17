@@ -224,7 +224,7 @@ export default function Landing() {
               <a className="logo" href="#top" aria-label="Paritas home"><SealMark paint="url(#silver)" className="js-mark" /><b>Paritas</b></a>
               <ul className="foot-l"><li><a href="/app/trade">App</a></li><li><a href="#faq">FAQ</a></li><li><a href="#">GitHub</a></li><li><a href="#">X</a></li><li><a href="#">Blockscout</a></li><li><a href="mailto:hello@example.com">Contact</a></li></ul>
             </div>
-            <p className="disc">Paritas is an independent interface and is not affiliated with, operated by or endorsed by Robinhood Markets, Inc. or its affiliates. Stock Tokens are tokenized debt securities issued by Robinhood Assets (Jersey) Limited. They are not available in the United States or to US persons and are restricted in other jurisdictions. Prices on this page come from Chainlink and Uniswap and are for information only. Nothing here is investment advice. Trading tokenized securities carries risk, including loss of the amount you trade.</p>
+            <p className="disc">Paritas is an independent interface and is not affiliated with, operated by or endorsed by Robinhood Markets, Inc. or its affiliates. Company names and logos belong to their owners and only identify the stock behind each token. Stock Tokens are tokenized debt securities issued by Robinhood Assets (Jersey) Limited. They are not available in the United States or to US persons and are restricted in other jurisdictions. Prices on this page come from Chainlink and Uniswap and are for information only. Nothing here is investment advice. Trading tokenized securities carries risk, including loss of the amount you trade.</p>
           </div>
         </footer>
       </div>

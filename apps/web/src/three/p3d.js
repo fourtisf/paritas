@@ -4,8 +4,10 @@
 // Port target: components/three/CoinCarousel.tsx and SpinCoin.tsx calling these functions from useEffect.
 // Next.js changes: next/font renames the family, so the coin labels resolve it from --font-archivo; installP3D() is
 // idempotent and returns a promise of window.P3D (null without WebGL).
+// Coin faces show the company mark from lib/tokenLogos.ts above the ticker (ALFA, after the prototype).
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { tokenLogo } from "../lib/tokenLogos";
 
 export function installP3D() {
   if (window.__p3dInstall) return window.__p3dInstall;
@@ -26,8 +28,15 @@ export function installP3D() {
     for (let i = 0; i <= 1600; i++) { const t = i / 1600 * T, x = ((R0 - r0) * Math.cos(t) + d0 * Math.cos(k * t)) * sc, y = ((R0 - r0) * Math.sin(t) - d0 * Math.sin(k * t)) * sc; i ? g.lineTo(x, y) : g.moveTo(x, y); }
     g.stroke(); g.restore();
     g.save(); g.translate(256, 256); g.rotate(-Math.PI / 2); g.fillStyle = "#0c0c0f"; g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = `800 ${label.length > 3 ? 112 : 132}px ${FONT}, Arial, sans-serif`; g.fillText(label, 0, -8);
-    g.font = `600 30px ${FONT}, Arial, sans-serif`; g.fillStyle = "rgba(12,12,15,.7)"; g.fillText("Stock Token", 0, 78); g.restore();
+    const logo = tokenLogo(label);
+    if (logo) { // company mark (lib/tokenLogos.ts) over the ticker, in the same ink; funds keep the big ticker
+      g.save(); g.translate(-75, -108); g.scale(6.25, 6.25); g.fill(new Path2D(logo)); g.restore();
+      g.font = `800 52px ${FONT}, Arial, sans-serif`; g.fillText(label, 0, 82);
+    } else {
+      g.font = `800 ${label.length > 3 ? 112 : 132}px ${FONT}, Arial, sans-serif`; g.fillText(label, 0, -8);
+      g.font = `600 30px ${FONT}, Arial, sans-serif`; g.fillStyle = "rgba(12,12,15,.7)"; g.fillText("Stock Token", 0, 78);
+    }
+    g.restore();
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; texCache.set(label, t); return t;
   }
   function makeCtx(el, { fov = 30, ratio = 1.75 } = {}) {

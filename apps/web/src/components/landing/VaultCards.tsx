@@ -2,7 +2,8 @@
 import { MARKETS, TIERS } from "@paritas/shared";
 import { useSession } from "@/hooks/useSession";
 import { useMarkets } from "./data";
-import { pct, ticker, usd } from "./format";
+import { pct, usd } from "./format";
+import { TokenMark } from "@/components/brand/TokenMark";
 
 const WAVE1 = MARKETS.filter((m) => m.wave === 1);
 const WAVE2 = MARKETS.filter((m) => m.wave === 2).map((m) => m.symbol);
@@ -22,7 +23,7 @@ export function VaultCards() {
           <div className="vc glass" key={c.symbol}>
             <span className="glare"></span>
             <div className="vc-h">
-              <span className="vc-m"><span className="tok md" aria-hidden="true">{ticker(c.symbol)}</span><span>{c.symbol}<small>{c.name} · Tier {c.tier}</small></span></span>
+              <span className="vc-m"><span className="tok md" aria-hidden="true"><TokenMark sym={c.symbol} /></span><span>{c.symbol}<small>{c.name} · Tier {c.tier}</small></span></span>
               {pill && <span className="pill" style={{ ["--c" as string]: pill[1] }}>{pill[0]}</span>}
             </div>
             <div className="vc-r"><span>TVL of {usd(t.capUsd)} cap</span><b className="num">{tvl != null ? usd(Math.round(tvl)) : "–"}</b></div>

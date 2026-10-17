@@ -56,6 +56,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c,var(--lav)) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .tok{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;font-size:9.5px;font-weight:750;letter-spacing:.02em;color:var(--h);background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--h) 30%,var(--s2)),var(--s1));border:1px solid color-mix(in srgb,var(--h) 35%,transparent);flex:none;font-stretch:110%}
 .tok.sm{width:26px;height:26px;font-size:8px}
+.tok svg{width:50%;height:50%}
 .tok.lg{width:46px;height:46px;font-size:11.5px}
 .input,.sel{height:40px;border-radius:11px;border:1px solid var(--line);background:var(--bg-2);padding:0 12px;color:var(--text);outline:0;min-width:0}
 .input:focus,.sel:focus{border-color:var(--line-2)}

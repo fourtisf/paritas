@@ -99,6 +99,7 @@ p,dd,li{text-wrap:pretty}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c,var(--text));flex:none}
 .tok{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;font-size:8px;font-weight:750;letter-spacing:.02em;color:#0C0C0F;background:radial-gradient(circle at 32% 28%,#FAFAFC,#A7A7B0 55%,#4A4A53);box-shadow:inset 0 0 0 1.5px rgba(12,12,15,.35);flex:none;font-stretch:110%}
 .tok.md{width:34px;height:34px;font-size:9px}
+.tok svg{width:50%;height:50%}
 .scroll-cue{display:flex;align-items:center;gap:12px;margin-top:56px;font-size:13px;color:var(--muted)}
 .scroll-cue i{position:relative;width:22px;height:34px;border-radius:12px;border:1.5px solid var(--line-2)}
 .scroll-cue i::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;border-radius:2px;background:var(--text);transform:translateX(-50%);animation:cue 1.8s ease-in-out infinite}

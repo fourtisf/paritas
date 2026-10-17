@@ -6,12 +6,14 @@
 // Porting changes: mountLandingScene returns dispose() (cancels the frame loop, removes every listener, frees GPU
 // resources), and takes the font family because next/font renames "Archivo". dispose() also loses the WebGL context,
 // so give each mount a fresh <canvas id="gl"> (components/three/LandingCanvas.tsx does).
+// Coin faces show the company mark from lib/tokenLogos.ts above the ticker (ALFA, after the prototype).
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { tokenLogo } from "../lib/tokenLogos";
 
 export function mountLandingScene({ fontFamily = '"Archivo"' } = {}) {
 
@@ -92,8 +94,16 @@ export function mountLandingScene({ fontFamily = '"Archivo"' } = {}) {
       g.save(); g.translate(256, 256); g.strokeStyle = "rgba(14,14,17,.16)"; g.lineWidth = 1.1; g.beginPath();
       const k = (R0 - r0) / r0, T = Math.PI * 2 * r0, sc = 196 / (R0 - r0 + d0); for (let i = 0; i <= 1600; i++) { const t = i / 1600 * T, x = ((R0 - r0) * Math.cos(t) + d0 * Math.cos(k * t)) * sc, y = ((R0 - r0) * Math.sin(t) - d0 * Math.sin(k * t)) * sc; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); g.restore();
       g.save(); g.translate(256, 256); g.rotate(-Math.PI / 2);
-      g.fillStyle = "#0c0c0f"; g.textAlign = "center"; g.textBaseline = "middle"; g.font = `800 ${label.length > 3 ? 112 : 132}px ${fontFamily}, Arial, sans-serif`; g.fillText(label, 0, -8);
-      g.font = `600 30px ${fontFamily}, Arial, sans-serif`; g.fillStyle = "rgba(12,12,15,.7)"; g.fillText("Stock Token", 0, 78); g.restore();
+      g.fillStyle = "#0c0c0f"; g.textAlign = "center"; g.textBaseline = "middle";
+      const logo = tokenLogo(label);
+      if (logo) { // company mark (lib/tokenLogos.ts) over the ticker, in the same ink; funds keep the big ticker
+        g.save(); g.translate(-75, -108); g.scale(6.25, 6.25); g.fill(new Path2D(logo)); g.restore();
+        g.font = `800 52px ${fontFamily}, Arial, sans-serif`; g.fillText(label, 0, 82);
+      } else {
+        g.font = `800 ${label.length > 3 ? 112 : 132}px ${fontFamily}, Arial, sans-serif`; g.fillText(label, 0, -8);
+        g.font = `600 30px ${fontFamily}, Arial, sans-serif`; g.fillStyle = "rgba(12,12,15,.7)"; g.fillText("Stock Token", 0, 78);
+      }
+      g.restore();
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
     }
     const coinGeo = new THREE.CylinderGeometry(.3, .3, .05, 72); coinGeo.rotateX(Math.PI / 2);

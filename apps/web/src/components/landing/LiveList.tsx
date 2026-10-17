@@ -1,6 +1,7 @@
 "use client";
 import { useMarkets, useLatestFills, mainVenue, stockAmount, VEN } from "./data";
-import { nf, sgn, ticker, usd } from "./format";
+import { nf, sgn, usd } from "./format";
+import { TokenMark } from "@/components/brand/TokenMark";
 
 /** Hero card: the latest fills routed on Paritas (GET /fills). */
 export function LiveList() {
@@ -17,7 +18,7 @@ export function LiveList() {
           const v = mainVenue(r);
           return (
             <li key={r.id}>
-              <span className="tok" aria-hidden="true">{ticker(sym)}</span>
+              <span className="tok" aria-hidden="true"><TokenMark sym={sym} /></span>
               <div style={{ minWidth: 0 }}>
                 <div className="live-t">{r.buy ? "Bought" : "Sold"} {nf(stockAmount(r.buy ? r.amountOut : r.amountIn), 2)} {sym}</div>
                 <div className="live-s"><span className="dot" style={{ ["--c" as string]: VEN[v].c }}></span>{VEN[v].name}</div>

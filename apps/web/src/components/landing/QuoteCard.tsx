@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/hooks/useSession";
 import { announceRoute, previewVenues, useMarkets, useWalletlessQuote, VEN, type VenueView } from "./data";
-import { nf, pct, sgn, ticker, usd } from "./format";
+import { nf, pct, sgn, usd } from "./format";
+import { TokenMark } from "@/components/brand/TokenMark";
 
 const CHIPS = ["NVDAx", "AAPLx", "SPYx", "TSLAx"];
 const PRESETS = [1000, 10000, 50000, 250000];
@@ -53,7 +54,7 @@ export function QuoteCard() {
         <div className="chips" id="chips" role="group" aria-label="Market">
           {CHIPS.map((s) => (
             <button type="button" className="chip" key={s} data-sym={s} aria-pressed={s === sym} onClick={() => { setSym(s); setText(null); }}>
-              <span className="tok" aria-hidden="true">{ticker(s)}</span>{s}
+              <span className="tok" aria-hidden="true"><TokenMark sym={s} /></span>{s}
             </button>
           ))}
         </div>

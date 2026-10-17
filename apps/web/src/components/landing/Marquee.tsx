@@ -1,7 +1,8 @@
 "use client";
 import { MARKETS } from "@paritas/shared";
 import { useMarkets } from "./data";
-import { nf, ticker } from "./format";
+import { nf } from "./format";
+import { TokenMark } from "@/components/brand/TokenMark";
 
 /** Price strip under the hero: live Chainlink share prices from GET /markets. */
 export function Marquee() {
@@ -13,7 +14,7 @@ export function Marquee() {
         const live = m && m.mid > 0;
         return (
           <span className="mq" key={c.symbol}>
-            <span className="tok" aria-hidden="true">{ticker(c.symbol)}</span>
+            <span className="tok" aria-hidden="true"><TokenMark sym={c.symbol} /></span>
             <b>{c.symbol}</b>
             <span className="num">{live ? nf(m.mid) : "–"}</span>
             {live && <span className={m.chg >= 0 ? "up" : "down"}>{m.chg >= 0 ? "+" : "−"}{nf(Math.abs(m.chg))}%</span>}

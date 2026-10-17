@@ -1,7 +1,8 @@
 "use client";
 import { SESSION_COPY } from "@paritas/shared";
 import { previewVenues, useMarkets, useWalletlessQuote, VEN } from "./data";
-import { nf, sgn, ticker } from "./format";
+import { nf, sgn } from "./format";
+import { TokenMark } from "@/components/brand/TokenMark";
 
 const SYM = "NVDAx";
 const PAID = 10_000;
@@ -21,7 +22,7 @@ export function ExampleReceipt() {
     <div className="rcpt glass" aria-label="Example trade receipt"><div className="foil"></div><div className="rc-b">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div><div className="muted" style={{ fontSize: 12.5 }}>Example receipt · live Chainlink price</div><div className="big-t">Bought {v ? nf(v.out!, 2) : "–"} {SYM}</div></div>
-        <span className="tok" style={{ width: 46, height: 46, fontSize: 11 }}>{ticker(SYM)}</span>
+        <span className="tok" style={{ width: 46, height: 46, fontSize: 11 }}><TokenMark sym={SYM} /></span>
       </div>
       <div className="perf" aria-hidden="true"></div>
       <div className="lns" style={{ marginTop: 0 }}>
