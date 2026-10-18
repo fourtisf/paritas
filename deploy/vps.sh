@@ -29,8 +29,13 @@ npm run db:generate -w @paritas/api
 npm run db:migrate -w @paritas/api
 npm run build -w @paritas/web
 
-pm2 delete paritas-api paritas-indexer paritas-web >/dev/null 2>&1 || true
+pm2 delete paritas-api paritas-indexer paritas-web paritas-keeper >/dev/null 2>&1 || true
 pm2 start apps/api/ecosystem.config.cjs
 pm2 start "npm run start -w @paritas/web" --name paritas-web
+# Testnet with test assets only (docs/TESTNET.md): the price keeper, when its key file is present.
+if [ -f deploy/keeper.env ]; then
+  chmod 600 deploy/keeper.env
+  pm2 start "node --env-file=deploy/keeper.env --import tsx packages/shared/scripts/keeper-testnet.ts" --name paritas-keeper
+fi
 pm2 save
 pm2 status

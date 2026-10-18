@@ -98,6 +98,8 @@ export function ConnectModal() {
           <span>
             {CHAIN_ID === 31337
               ? "Local chain: the test wallet sends real transactions to your anvil node. No wallet app is needed."
+              : CHAIN_ID === 46630
+              ? "Testnet: test tokens only, with no real value. Your wallet may ask to add Robinhood Chain testnet."
               : "Stock tokens are not offered to US persons. Your wallet must be verified before it can trade or provide liquidity."}
           </span>
         </div>

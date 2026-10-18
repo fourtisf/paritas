@@ -1,7 +1,7 @@
 /**
  * Venue pricing for /quote. Each function returns a VenueQuoter for packages/shared buildRoute.
  *  - vault: AnchorVault.state() once, then pure local math (quote.ts), identical to previewSwap
- *  - pool:  Uniswap QuoterV2 eth_call (mainnet/testnet) or the mock router's fixed rate (anvil)
+ *  - pool:  Uniswap QuoterV2 eth_call, or the mock router's fixed rate on mock deployments (anvil, DeployTestnet)
  *  - rfq:   signed quotes collected from connected makers (rfq.ts)
  */
 import { parseAbi, type Hex } from "viem";
@@ -85,7 +85,8 @@ export async function poolQuoter(c: Ctx): Promise<VenueQuoter> {
   const d = await deployment();
   const tokenIn = c.buy ? c.usdg : c.stock;
   const tokenOut = c.buy ? c.stock : c.usdg;
-  if (chainId === 31337) {
+  if (d.mocks) {
+    // anvil and the DeployTestnet chain: the Uniswap stand-in fills at a fixed rate
     const rate = await client.readContract({ address: d.uniswapV3SwapRouter02, abi: mockRouterAbi, functionName: "rate", args: [tokenIn, tokenOut] });
     return { id: "pool", maxIn: 2n ** 200n, quote: async (x) => ({ amountOut: (x * rate) / 10n ** 18n }) };
   }

@@ -12,3 +12,5 @@ contracts/broadcast/
 deployments/31337.json
 *.log
 .DS_Store
+# testnet keeper key (deploy/keeper.env): never committed
+deploy/*.env

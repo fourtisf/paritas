@@ -30,6 +30,7 @@ import { SessionCard, useSess } from "../session";
 import { CHAIN_NAME, ConnectModal, FlowError, Steps, Success } from "../modals";
 import { Chg, cssVar, Ln, LivePx, SideTxt, useNarrow, VenueChip, VENUES } from "../bits";
 import { useLiveIds } from "../Shell";
+import { useTestFaucet } from "../faucet";
 
 type Side = "buy" | "sell";
 const TF_LABEL = { "1D": "24 hours", "1W": "7 days", "1M": "30 days" } as const;
@@ -111,18 +112,21 @@ export function TradePage() {
 
   // button
   const payBal = w.balances[payT];
+  const faucet = useTestFaucet(() => w.refetch());
   const need = has ? parseUnits(toAmount(amt, buy ? 6 : 18), payDec) : 0n;
-  let label = "Review swap", act: "review" | "connect" | null = "review";
+  let label = "Review swap", act: "review" | "connect" | "faucet" | null = "review";
   if (!w.isConnected) (label = "Connect wallet"), (act = "connect");
   else if (!has) (label = "Enter an amount"), (act = null);
   else if (quote.isError && !q) (label = "Quotes are unavailable"), (act = null);
   else if (q && !q.ok) (label = "No route inside the limit"), (act = null);
+  else if (payBal !== undefined && payBal < need && faucet.available && payT === "USDG") (label = faucet.busy ? "Adding test USDG…" : "Get 10,000 test USDG"), (act = faucet.busy ? null : "faucet");
   else if (payBal !== undefined && payBal < need) (label = "Not enough " + payT), (act = null);
   else if (w.eligible === false) (label = "Wallet not verified for stock tokens"), (act = null);
   else if (!q || stale) (label = "Getting a quote…"), (act = null);
 
   const swapBtn = () => {
     if (act === "connect") ui.openModal(<ConnectModal />);
+    if (act === "faucet") void faucet.mint();
     if (act === "review" && q) ui.openModal(<ReviewModal q={q} m={m} side={side} amt={amt} />);
   };
 

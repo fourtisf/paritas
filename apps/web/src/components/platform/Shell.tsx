@@ -23,6 +23,7 @@ import { SettingsProvider, useSettings } from "./settings";
 import { DialFace, DialPop } from "./session";
 import { CHAIN_NAME, ConnectModal, SettingsModal } from "./modals";
 import { useTilt } from "./three";
+import { useTestFaucet } from "./faucet";
 
 export const NAV: [string, string][] = [
   ["trade", "Trade"],
@@ -96,6 +97,7 @@ function Account() {
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const w = useWallet();
+  const faucet = useTestFaucet(() => w.refetch());
   if (!isConnected || !address) {
     return (
       <button className="btn btn-holo" onClick={() => ui.openModal(<ConnectModal />)}>
@@ -113,6 +115,7 @@ function Account() {
           ui.toast("Address copied");
         }
         if (k === "set") ui.openModal(<SettingsModal />);
+        if (k === "faucet") void faucet.mint();
         if (k === "out") {
           disconnect();
           ui.toast("Wallet disconnected", "", "out");
@@ -136,6 +139,12 @@ function Account() {
           </span>
         )}
       </div>
+      {faucet.available && (
+        <button className="pop-item" data-a="faucet">
+          <Icon n="plus" />
+          Get 10,000 test USDG
+        </button>
+      )}
       <button className="pop-item" data-a="copy">
         <Icon n="copy" />
         Copy address

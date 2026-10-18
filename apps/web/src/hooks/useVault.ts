@@ -11,6 +11,8 @@ import { decodeEventLog, erc20Abi, maxUint256, type Log } from "viem";
 import { anchorVaultAbi } from "@paritas/shared";
 import type { Step } from "@/components/platform/modals";
 import { txErrorMessage } from "./useSwap";
+import { CHAIN_ID } from "@/lib/env";
+import { ensureChain } from "@/lib/chainGuard";
 
 type Hex = `0x${string}`;
 const BPS = 10_000n;
@@ -52,16 +54,17 @@ export function useVaultTx() {
       ]);
       let i = 0;
       try {
+        await ensureChain(config);
         for (const x of approvals) {
           mark(i, "active");
-          const h = await writeContract(config, { address: x.token, abi: erc20Abi, functionName: "approve", args: [a.vault, maxUint256] });
+          const h = await writeContract(config, { chainId: CHAIN_ID, address: x.token, abi: erc20Abi, functionName: "approve", args: [a.vault, maxUint256] });
           await waitForTransactionReceipt(config, { hash: h });
           mark(i++, "done");
         }
         mark(i, "active");
         const [shares] = await readContract(config, { address: a.vault, abi: anchorVaultAbi, functionName: "previewDeposit", args: [a.usdIn, a.stockIn] });
         const minShares = (shares * (BPS - BigInt(a.slipBps))) / BPS;
-        const hash = await writeContract(config, { address: a.vault, abi: anchorVaultAbi, functionName: "deposit", args: [a.usdIn, a.stockIn, minShares, address] });
+        const hash = await writeContract(config, { chainId: CHAIN_ID, address: a.vault, abi: anchorVaultAbi, functionName: "deposit", args: [a.usdIn, a.stockIn, minShares, address] });
         const rc = await waitForTransactionReceipt(config, { hash });
         if (rc.status !== "success") throw new Error("reverted");
         mark(i, "done");
@@ -86,9 +89,10 @@ export function useVaultTx() {
       ]);
       let i = 0;
       try {
+        await ensureChain(config);
         const [usdOut, stockOut] = await readContract(config, { address: a.vault, abi: anchorVaultAbi, functionName: "previewWithdraw", args: [a.shares] });
         const slip = BPS - BigInt(a.slipBps);
-        const hash = await writeContract(config, { address: a.vault, abi: anchorVaultAbi, functionName: "withdraw", args: [a.shares, (usdOut * slip) / BPS, (stockOut * slip) / BPS, address] });
+        const hash = await writeContract(config, { chainId: CHAIN_ID, address: a.vault, abi: anchorVaultAbi, functionName: "withdraw", args: [a.shares, (usdOut * slip) / BPS, (stockOut * slip) / BPS, address] });
         mark(i++, "done");
         mark(i, "active");
         const rc = await waitForTransactionReceipt(config, { hash });

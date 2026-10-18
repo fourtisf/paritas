@@ -5,6 +5,8 @@ import { readContract, writeContract, waitForTransactionReceipt, getBlock } from
 import { erc20Abi, maxUint256, BaseError, ContractFunctionRevertedError, UserRejectedRequestError } from "viem";
 import { swapRouterAbi, decodeRouteLogs, explainError, type RouteRow } from "@paritas/shared";
 import type { QuoteResponse } from "./useQuote";
+import { CHAIN_ID } from "@/lib/env";
+import { ensureChain } from "@/lib/chainGuard";
 
 type Step = { label: string; detail: string; state: "todo" | "active" | "done" | "error" };
 
@@ -48,15 +50,17 @@ export function useSwap(addresses: { router: `0x${string}`; usdg: `0x${string}` 
       const mark = (i: number, state: Step["state"]) => setSteps((s) => s.map((x, j) => (j === i ? { ...x, state } : x)));
       let i = 0;
       try {
+        await ensureChain(config);
         if (needsApproval) {
           mark(i, "active");
-          const h = await writeContract(config, { address: tokenIn, abi: erc20Abi, functionName: "approve", args: [addresses.router, maxUint256] });
+          const h = await writeContract(config, { chainId: CHAIN_ID, address: tokenIn, abi: erc20Abi, functionName: "approve", args: [addresses.router, maxUint256] });
           await waitForTransactionReceipt(config, { hash: h });
           mark(i++, "done");
         }
         mark(i, "active");
         const block = await getBlock(config);
         const hash = await writeContract(config, {
+          chainId: CHAIN_ID,
           address: addresses.router,
           abi: swapRouterAbi,
           functionName: "swap",

@@ -11,6 +11,8 @@ type Hex = `0x${string}`;
 
 export interface Deployment {
   chainId: number;
+  /** Test assets deployed by DeployTestnet.s.sol (mock tokens, feeds, Uniswap stand-in). Never on mainnet. */
+  mocks: boolean;
   usdg: Hex;
   uniswapV3SwapRouter02: Hex;
   uniswapQuoterV2?: Hex;
@@ -44,6 +46,7 @@ const FILES: Record<number, any> = { 4663: mainnet, 46630: testnet };
 
 export function parseDeployment(j: any): Deployment {
   const id = j.chainId as number;
+  if (j.mocks === true && id === 4663) throw new Error("deployments/4663.json: mock assets are never allowed on mainnet.");
   const ext = j.external ?? {};
   const p = j.paritas ?? {};
   const stocks: Deployment["stocks"] = {};
@@ -55,6 +58,7 @@ export function parseDeployment(j: any): Deployment {
   const k = (name: string) => must(p[name], `paritas.${name}`, id);
   return {
     chainId: id,
+    mocks: j.mocks === true || id === 31337,
     usdg: must(ext.usdg?.address, "external.usdg.address", id),
     uniswapV3SwapRouter02: must(ext.uniswapV3SwapRouter02?.address, "external.uniswapV3SwapRouter02.address", id),
     uniswapQuoterV2: isAddr(ext.uniswapQuoterV2?.address) ? ext.uniswapQuoterV2.address : undefined,
