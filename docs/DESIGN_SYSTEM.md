@@ -53,8 +53,9 @@ ALFA chose the **guilloché seal** (logo round 2, concept F). It is the site's g
   - `paritas-mark.svg`: the small seal.
   - `paritas-seal-2048.png`: full seal, transparent.
   - `paritas-x-profile.png`: X profile photo, 1000 × 1000. X crops it to a circle, so the reeded edge sits at 86% of the radius.
-  - `paritas-x-header.png`: X header, 1500 × 500: a USDG → NVDA swap settling inside the swap arrows. The copy sits top left, clear of the profile photo that covers the bottom left.
-  - `paritas-x-article-cover.png`: X article cover, 2000 × 800 (5:2), the same scene with the headline.
+  - `paritas-x-header.png`: X header, 1500 × 500: one reeded NVDA coin taking in a USDG stream over a banknote guilloché, with a receipt strip. The copy sits top left, clear of the profile photo that covers the bottom left.
+  - `paritas-x-article-cover.png`: X article cover, 2000 × 800 (5:2): USDG and NVDA inside the swap arrows, with the headline.
+  - Copy for X (bio, posts, the article): `docs/marketing/x-launch-copy.md`.
 - **Rules:**
   - Do not recolour the seal, put it on a colour, or add effects (glow, 3D, gold).
   - Use the full seal at 96 px and up. Below that, use the small seal.
