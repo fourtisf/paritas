@@ -7,6 +7,7 @@ import { DeploymentProvider } from "@/components/platform/deployment";
 import { Shell } from "@/components/platform/Shell";
 import { Rosette, SvgDefs } from "@/components/platform/Guilloche";
 import { SealMark } from "@/components/brand/Seal";
+import { NotLiveWallet } from "@/components/platform/NotLiveWallet";
 import { CHAINS } from "@paritas/shared";
 
 export const metadata: Metadata = { title: "Paritas App" };
@@ -37,6 +38,9 @@ function NotLive({ detail }: { detail: string | null }) {
           <SealMark />
           <b>Paritas</b>
         </a>
+        <div style={{ marginLeft: "auto" }}>
+          <NotLiveWallet />
+        </div>
       </header>
       <main className="page">
         <section className="panel">

@@ -1,6 +1,6 @@
 "use client";
 /** Connect, Settings and the transaction-flow pieces (prototype connectModal, settingsModal, runFlow, successHTML). */
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useConnect, type Connector } from "wagmi";
 import { SESSION_COPY, CHAINS, type SessionName } from "@paritas/shared";
 import { CHAIN_ID } from "@/lib/wagmi";
@@ -9,24 +9,31 @@ import { Icon } from "./Icon";
 import { Modal, ModalHead, useUI } from "./ui";
 import { CAN_SIMULATE, DEFAULTS, useSettings, type Settings } from "./settings";
 import { Burst } from "./three";
+import { WALLETS, walletLogo } from "@/lib/wallets";
 import { useSession } from "@/hooks/useSession";
 
 export const CHAIN_NAME = CHAINS[CHAIN_ID].name;
 
-const WALLET_ROWS: Record<string, [string, string, string, string]> = {
-  injected: ["Browser wallet", "MetaMask, Rabby and other extensions", "B", "#F5F5F7"],
-  walletConnect: ["WalletConnect", "Scan with a mobile wallet", "W", "#C9C9D0"],
-  coinbaseWalletSDK: ["Coinbase Wallet", "Extension or mobile app", "C", "#D9D9DF"],
-  mock: ["Local test wallet", "Anvil account #1 with test balances", "L", "#A3A3AC"],
-};
+/** A row's logo tile: the wallet's own EIP-6963 icon or our copy from public/wallets/; the generic wallet glyph otherwise. */
+function WalletLogo({ src }: { src?: string }) {
+  return <span className="wallet-i logo">{src ? <img src={src} alt="" width={24} height={24} /> : <Icon n="wallet" />}</span>;
+}
 
 export function ConnectModal() {
   const { connectors, connectAsync } = useConnect();
   const ui = useUI();
   const [busy, setBusy] = useState<string | null>(null);
-  const rows = connectors.filter((c) => WALLET_ROWS[c.id]);
-  const go = async (c: Connector) => {
-    setBusy(c.uid);
+  // EIP-6963: every installed extension announces itself (id = its rdns, with name and icon).
+  const detected = connectors.filter((c) => c.type === "injected" && c.id !== "injected");
+  const legacy = connectors.find((c) => c.id === "injected");
+  const wc = connectors.find((c) => c.id === "walletConnect");
+  const cb = connectors.find((c) => c.id === "coinbaseWalletSDK");
+  const mock = connectors.find((c) => c.id === "mock");
+  const hasEthereum = typeof window !== "undefined" && "ethereum" in window;
+  const more = WALLETS.filter((w) => !detected.some((c) => c.id === w.rdns || c.name === w.name));
+
+  const go = async (c: Connector, key: string) => {
+    setBusy(key);
     try {
       const r = await connectAsync({ connector: c });
       ui.closeModal();
@@ -37,6 +44,17 @@ export function ConnectModal() {
       ui.toast(/not found|provider/i.test(msg) ? "No browser wallet found" : "Wallet not connected", /rejected/i.test(msg) ? "You cancelled in your wallet." : "Install a wallet extension or pick another option.", "info");
     }
   };
+  const row = (key: string, name: string, sub: string, logo: ReactNode, onClick: () => void) => (
+    <button key={key} className="wallet" onClick={onClick} disabled={!!busy}>
+      {busy === key ? <span className="spin" /> : logo}
+      <span className="wallet-t">
+        <span className="wallet-n">{busy === key ? "Connecting…" : name}</span>
+        <span className="wallet-s">{sub}</span>
+      </span>
+      <Icon n="chev" className="chev" />
+    </button>
+  );
+
   return (
     <Modal label="Connect a wallet">
       <ModalHead title="Connect a wallet" />
@@ -44,33 +62,35 @@ export function ConnectModal() {
         <p className="t2" style={{ margin: "0 0 14px", fontSize: 13.5 }}>
           Paritas never holds your assets. Swaps settle from your wallet to your wallet.
         </p>
-        <div className="wallets">
-          {rows.map((c) => {
-            const [n, s, i, col] = WALLET_ROWS[c.id];
+        {mock && <div className="wallets">{row(mock.uid, "Local test wallet", "Anvil account #1 with test balances", <WalletLogo />, () => go(mock, mock.uid))}</div>}
+        {(detected.length > 0 || (legacy && hasEthereum)) && (
+          <>
+            <div className="wallet-h">Detected in your browser</div>
+            <div className="wallets">
+              {detected.map((c) => row(c.uid, c.name, "Installed", <WalletLogo src={c.icon} />, () => go(c, c.uid)))}
+              {!detected.length && legacy && hasEthereum && row(legacy.uid, "Browser wallet", "Installed", <WalletLogo />, () => go(legacy, legacy.uid))}
+            </div>
+          </>
+        )}
+        <div className="wallet-h">{detected.length ? "More wallets" : "Popular wallets"}</div>
+        <div className="wallets wallets-2">
+          {more.map((w) => {
+            const logo = <WalletLogo src={walletLogo(w.id)} />;
+            if (w.id === "coinbase" && cb) return row(w.id, w.name, "App or extension", logo, () => go(cb, w.id));
+            if (wc) return row(w.id, w.name, "Scan with the app", logo, () => go(wc, w.id));
             return (
-              <button key={c.uid} className="wallet" onClick={() => go(c)} disabled={!!busy}>
-                {busy === c.uid ? (
-                  <>
-                    <span className="spin" />
-                    <span className="wallet-n">Connecting…</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="wallet-i" style={{ "--c": col } as CSSProperties}>
-                      {i}
-                    </span>
-                    <span>
-                      <span className="wallet-n">{n}</span>
-                      <br />
-                      <span className="wallet-s">{s}</span>
-                    </span>
-                    <Icon n="chev" className="chev" />
-                  </>
-                )}
-              </button>
+              <a key={w.id} className="wallet" href={w.url} target="_blank" rel="noopener noreferrer" aria-label={`Get ${w.name}`}>
+                {logo}
+                <span className="wallet-t">
+                  <span className="wallet-n">{w.name}</span>
+                  <span className="wallet-s">Get the app</span>
+                </span>
+                <Icon n="ext" className="chev ext" />
+              </a>
             );
           })}
         </div>
+        {wc && <div className="wallets" style={{ marginTop: 8 }}>{row(wc.uid, "WalletConnect", "Any other mobile wallet", <WalletLogo src={walletLogo("walletconnect")} />, () => go(wc, wc.uid))}</div>}
         <div className="note note-lav">
           <span>
             <Icon n="info" />

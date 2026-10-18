@@ -109,6 +109,19 @@ curl -s https://paritas.live/api/markets        # [] until the contracts are dep
 curl -s https://paritas.live/api/prices         # Finnhub reference prices (needs FINNHUB_API_KEY in apps/api/.env)
 ```
 
+## WalletConnect (mobile wallets)
+
+Without a project id, the connect modal still shows detected extensions and Coinbase Wallet. The other wallets then
+link to their download pages. With an id, they connect by QR code and a WalletConnect row appears.
+
+1. Create a free project at https://cloud.reown.com and add `paritas.live` to its allowed domains.
+2. As root, with the project id in place of `PROJECT_ID`:
+
+```bash
+sudo -iu paritas bash -c 'echo "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=PROJECT_ID" > ~/paritas/apps/web/.env.production.local'
+sudo -iu paritas bash /home/paritas/paritas/deploy/vps.sh
+```
+
 ## Update to the latest commit
 
 ```bash
