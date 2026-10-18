@@ -8,7 +8,17 @@ if [ "$(id -un)" != paritas ]; then
 fi
 cd "$(dirname "$0")/.."
 
+# A deployment file that a deploy script wrote on this server (it has the Paritas addresses) survives the update.
+KEEP=()
+for f in deployments/4663.json deployments/46630.json; do
+  if ! git diff --quiet -- "$f" && node -e 'process.exit(require(process.argv[1]).paritas?.swapRouter ? 0 : 1)' "$(pwd)/$f"; then
+    cp "$f" "$HOME/$(basename "$f").local"
+    git checkout -- "$f"
+    KEEP+=("$f")
+  fi
+done
 git pull --ff-only
+for f in "${KEEP[@]}"; do cp "$HOME/$(basename "$f").local" "$f"; done
 npm ci
 
 ENV=apps/api/.env

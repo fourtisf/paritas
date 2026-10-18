@@ -57,7 +57,7 @@ fi
 sed -i '/^RPC_URL=/d' "$KEYS" && echo "RPC_URL=$ROBINHOOD_TESTNET_RPC_URL" >> "$KEYS" # the keeper uses the same node
 chmod 600 "$KEYS"
 KEEPER_PRIVATE_KEY=$(grep '^KEEPER_PRIVATE_KEY=' "$KEYS" | cut -d= -f2-) # not exported: the builds never see it
-ADDR=$(cast wallet address --private-key "$KEEPER_PRIVATE_KEY")
+ADDR=$(env -u ETH_PASSWORD cast wallet address --private-key "$KEEPER_PRIVATE_KEY")
 BAL=$(cast balance "$ADDR" --rpc-url "$ROBINHOOD_TESTNET_RPC_URL")
 echo "address $ADDR, balance $(cast from-wei "$BAL") ETH"
 if ! node -e 'process.exit(BigInt(process.argv[1]) >= 5n * 10n ** 16n ? 0 : 1)' "$BAL"; then

@@ -19,7 +19,7 @@
    - #7 audit.
    - #13 treasury.
    - Also #4 seed liquidity, #5 launch markets, #8 makers, #9 oracle, #10 sequencer feed.
-2. **External audit** done, with findings fixed or accepted in writing (ALFA). Send firms `docs/AUDIT_SCOPE.md`.
+2. **Audit**: ALFA chose an internal review for launch (`docs/SECURITY_REVIEW.md`). An external audit is still recommended (send firms `docs/AUDIT_SCOPE.md`).
 3. **Fill `deployments/4663.json`** (two people, `docs/VERIFY_ON_CHAIN.md`, signed on `docs/MAINNET_ADDRESSES.md`):
    - `external` (21 TODOs)
    - `roles` (4 TODOs): multisig = the Safe, guardian, attester, treasury.
@@ -67,9 +67,30 @@ Steps 7-9 as exact commands for paritas.live (Ubuntu 24.04, Nginx, TLS, pm2 unde
    ```
 10. **Runbook** for pause, unpause (timelock), maker removal and oracle incidents (BRIEF section 9).
 
+## One command on the VPS
+
+`deploy/mainnet.sh` does steps 5 to 9 on paritas.live. It was tested end to end against a local chain posing as 4663.
+Run it as root; it stops and says what it needs, and once that is done you run it again:
+
+```bash
+sudo -iu paritas git -C /home/paritas/paritas pull --ff-only
+sudo -iu paritas bash /home/paritas/paritas/deploy/mainnet.sh
+```
+
+1. Creates the attester key for wallet verification (`docs/ELIGIBILITY.md`) and prints its address, which goes in
+   `roles.attester`.
+2. Creates the deployer wallet (password-protected keystore) and asks for about 0.02 ETH for gas.
+3. Lists every address still `TODO` in `deployments/4663.json`.
+4. Dry run: prints what it read from every contract. It deploys only after you type `DEPLOY`.
+5. Checks that every Paritas contract has code, then restarts the API, the indexer and the web app.
+6. Send the resulting `deployments/4663.json` to be committed.
+
+The vaults start empty. Until they are seeded, routes go through Uniswap.
+
 ## Gaps in the app to close before launch
 
-- **Wallet verification flow.** Eligibility is enforced on mainnet. An unverified wallet sees "Wallet not verified for stock tokens", but there is no in-app flow to get verified. It needs the provider from decision #2 and an attester service that calls `EligibilityRegistry.attest`.
+- **Wallet verification flow.** Done: a country check and a signed declaration, no KYC (`docs/ELIGIBILITY.md`).
+- **Security review.** Done internally (`docs/SECURITY_REVIEW.md`). Keep the vault caps low until F-4 is decided.
 - **Spread APR.** Shows "–" until the API computes it from vault Swap events (30-day spread kept over average TVL).
 - **API.** Still to build:
   - live `ParamController` check against `config/protocol.json`
