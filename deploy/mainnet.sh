@@ -46,6 +46,8 @@ fi
 echo "API, indexer and web are on chain 4663"
 
 step "4/8 Wallet verification: attester key and country database"
+# The country check below needs this commit's packages; deploy/vps.sh installs them again in step 8.
+[ -d node_modules/mmdb-lib ] || npm ci
 KEY=$(grep '^ATTESTER_PRIVATE_KEY=' "$API_ENV" | cut -d= -f2- || true)
 if [ -z "$KEY" ]; then
   KEY=0x$(openssl rand -hex 32)

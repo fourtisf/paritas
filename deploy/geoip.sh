@@ -5,6 +5,7 @@
 # Run as root:  sudo -iu paritas bash /home/paritas/paritas/deploy/geoip.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
+[ -d node_modules/mmdb-lib ] || { echo "Run npm ci in $(pwd) first (the check below needs mmdb-lib)." >&2; exit 1; }
 DIR="$HOME/geo"
 mkdir -p "$DIR"
 # A new month's file appears during the first days of the month, so fall back to last month's.
