@@ -7,9 +7,11 @@ import { registerMaker } from "./lib/rfq";
 import { deployment } from "./lib/chain";
 import quoteRoutes from "./routes/quote";
 import readRoutes from "./routes/read";
+import eligibilityRoutes from "./routes/eligibility";
 import { startRefPrices } from "./lib/refPrices";
 
-const app = Fastify({ logger: true });
+// req.ip is the client address Nginx adds to X-Forwarded-For; a client-sent header is never trusted.
+const app = Fastify({ logger: true, trustProxy: env.TRUST_PROXY });
 
 // Until deployments/<chainId>.json has real addresses (mainnet before launch), endpoints that need them answer 503
 // and /markets is empty. Say so once at startup instead of in every request log.
@@ -24,6 +26,7 @@ await app.register(cors, { origin: env.CORS_ORIGINS.split(",") });
 await app.register(websocket);
 await app.register(readRoutes);
 await app.register(quoteRoutes);
+await app.register(eligibilityRoutes);
 
 // Live stream for the app: new fills and session changes, published by the indexer on Redis.
 const sub = new Redis(env.REDIS_URL);

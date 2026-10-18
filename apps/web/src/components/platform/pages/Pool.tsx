@@ -22,6 +22,7 @@ import { Tok, TokBtn } from "../Tok";
 import { Donut } from "../charts";
 import { useSess } from "../session";
 import { ConnectModal, FlowError, Steps, Success } from "../modals";
+import { useVerifyOpen, VerifyModal } from "../verify";
 import { cssVar, Ln } from "../bits";
 
 const HUE = "#E6E6EA";
@@ -265,6 +266,7 @@ const toAmt = (n: number, dp: number) => (n > 0 ? n.toFixed(dp).replace(/\.?0+$/
 function DepositForm({ m, row, quoting }: { m: Market; row?: MarketRow; quoting: boolean }) {
   const ui = useUI();
   const w = useWallet();
+  const canVerify = useVerifyOpen();
   const sess = useSess();
   const mid = row?.mid ?? 0;
   const [u, setU] = useState("5000");
@@ -307,8 +309,9 @@ function DepositForm({ m, row, quoting }: { m: Market; row?: MarketRow; quoting:
   const v = preview.data ? units(preview.data[1], 18) : uN + tN * mid;
   const balU = w.balances.USDG, balT = w.balances[m.symbol];
   const paused = sess.session === "closed";
-  let lab = `Deposit ${nf(v, 2)} USDG of value`, dis = false;
-  if (!m.vault) (lab = "Opens in the second wave"), (dis = true);
+  let lab = `Deposit ${nf(v, 2)} USDG of value`, dis = false, verify = false;
+  if (w.eligible === false && canVerify) (lab = "Verify wallet"), (verify = true);
+  else if (!m.vault) (lab = "Opens in the second wave"), (dis = true);
   else if (paused) (lab = "Deposits reopen when markets do"), (dis = true);
   else if (!row?.vault?.open) (lab = "Vault paused"), (dis = true);
   else if (!row.feedFresh) (lab = "Waiting for a fresh Chainlink price"), (dis = true);
@@ -397,7 +400,12 @@ function DepositForm({ m, row, quoting }: { m: Market; row?: MarketRow; quoting:
           <span>Shares are minted at the Chainlink price, less the vault spread. Deposits are priced like a trade.</span>
         </div>
       )}
-      <button className="btn btn-holo btn-lg btn-block" style={{ marginTop: 16 }} disabled={dis} onClick={() => ui.openModal(<DepositFlow m={m} usdIn={usdIn} stockIn={stockIn} />)}>
+      <button
+        className="btn btn-holo btn-lg btn-block"
+        style={{ marginTop: 16 }}
+        disabled={dis}
+        onClick={() => ui.openModal(verify ? <VerifyModal onDone={() => w.refetch()} /> : <DepositFlow m={m} usdIn={usdIn} stockIn={stockIn} />)}
+      >
         {lab}
       </button>
     </>

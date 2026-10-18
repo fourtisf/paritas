@@ -114,3 +114,18 @@ model IndexerCursor {
   name  String @id
   block BigInt
 }
+
+/// One row per attestation the API signed (lib/eligibility.ts): who declared, from which country, until when.
+/// The wallet's signed declaration is kept as the record of what it confirmed.
+model EligibilityGrant {
+  id             Int      @id @default(autoincrement())
+  chainId        Int
+  account        String // lowercase
+  country        String // ISO 3166 alpha-2 of the request, "XX" when unknown off mainnet
+  declaredAt     DateTime
+  validUntil     DateTime
+  declarationSig String
+  createdAt      DateTime @default(now())
+
+  @@index([account])
+}

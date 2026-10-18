@@ -40,7 +40,7 @@ export const PROTOCOL = raw as unknown as {
   tiers: Record<TierKey, TierParams>;
   sessions: Record<SessionName, SessionParams>;
   governance: { timelockDelaySec: number; multisigThreshold: number; multisigSigners: number };
-  eligibility: { enforcedOnMainnet: boolean; attestationTtlDays: number };
+  eligibility: { enforcedOnMainnet: boolean; attestationTtlDays: number; blockedCountries: string[] };
   markets: MarketConfig[];
 };
 

@@ -15,6 +15,12 @@ const Env = z.object({
   FINNHUB_API_KEY: z.string().default(""),
   FINNHUB_URL: z.string().default("https://finnhub.io/api/v1"),
   FINNHUB_WS_URL: z.string().default("wss://ws.finnhub.io"),
+  // Wallet verification (lib/eligibility.ts). The attester key signs EligibilityRegistry attestations: secret, never
+  // committed. Its address is roles.attester in deployments/<chainId>.json. Empty: verification is off.
+  ATTESTER_PRIVATE_KEY: z.string().regex(/^(0x[0-9a-fA-F]{64})?$/, "ATTESTER_PRIVATE_KEY must be 0x and 64 hex characters").default(""),
+  GEOIP_DB: z.string().default(""), // country database (.mmdb), see lib/geo.ts
+  // Proxies whose X-Forwarded-For is trusted for the client IP: only Nginx on this machine.
+  TRUST_PROXY: z.string().default("127.0.0.1,::1"),
 });
 
 export const env = Env.parse(process.env);

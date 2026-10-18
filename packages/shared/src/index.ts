@@ -1,6 +1,7 @@
 export * from "./abi";
 export * from "./addresses";
 export * from "./chain";
+export * from "./eligibility";
 export * from "./errors";
 export * from "./protocol";
 export * from "./quote";

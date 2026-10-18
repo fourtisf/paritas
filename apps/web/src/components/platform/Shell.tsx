@@ -24,6 +24,7 @@ import { DialFace, DialPop } from "./session";
 import { CHAIN_NAME, ConnectModal, SettingsModal } from "./modals";
 import { useTilt } from "./three";
 import { useTestFaucet } from "./faucet";
+import { useVerifyOpen, VerifyModal } from "./verify";
 
 export const NAV: [string, string][] = [
   ["trade", "Trade"],
@@ -98,6 +99,7 @@ function Account() {
   const { disconnect } = useDisconnect();
   const w = useWallet();
   const faucet = useTestFaucet(() => w.refetch());
+  const canVerify = useVerifyOpen();
   if (!isConnected || !address) {
     return (
       <button className="btn btn-holo" onClick={() => ui.openModal(<ConnectModal />)}>
@@ -115,6 +117,7 @@ function Account() {
           ui.toast("Address copied");
         }
         if (k === "set") ui.openModal(<SettingsModal />);
+        if (k === "verify") ui.openModal(<VerifyModal onDone={() => w.refetch()} />);
         if (k === "faucet") void faucet.mint();
         if (k === "out") {
           disconnect();
@@ -139,6 +142,12 @@ function Account() {
           </span>
         )}
       </div>
+      {w.eligible === false && canVerify && (
+        <button className="pop-item" data-a="verify">
+          <Icon n="shield" />
+          Verify wallet
+        </button>
+      )}
       {faucet.available && (
         <button className="pop-item" data-a="faucet">
           <Icon n="plus" />
