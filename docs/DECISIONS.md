@@ -10,7 +10,7 @@ Each one blocks a specific step. Write the answer here, with the date.
 | 4 | **Seed liquidity per vault** and who provides it | Vault caps are 2.5M / 1M / 400k per tier. Without liquidity, routes fall back to Uniswap. | prototype TVLs used only on anvil |
 | 5 | **Launch markets** (wave 1 / wave 2) | Wave 1 gets vaults at deploy. | NVDAx, SPYx, AAPLx, QQQx, MSFTx, TSLAx; wave 2 AMZNx, PLTRx |
 | 6 | **Multisig signers** (3-of-5 Safe) and the **guardian** | The Safe owns everything through the 48h timelock. The guardian can only pause. | not set |
-| 7 | **Audit firm and budget** | Required before mainnet. | **2026-10-18, ALFA: an internal review instead of an external audit before launch.** Done: `docs/SECURITY_REVIEW.md` (9 fixes, 2 open). An external audit is still recommended before the vault caps are raised. |
+| 7 | **Audit firm and budget** | Required before mainnet. | **2026-10-18, ALFA: an internal review instead of an external audit before launch.** Done: `docs/SECURITY_REVIEW.md` (8 fixed, 2 open). An external audit is still recommended before the vault caps are raised. |
 | 8 | **Market makers** for RFQ | Needed for orders of 25k USDG and up. | none |
 | 9 | **Oracle**: Data Feeds versus Data Streams | A 10 bps tier-A spread is only safe if the price is fresher than the feed's deviation threshold. Check the real heartbeat and deviation for each feed on Robinhood Chain. If a feed's deviation is above about 0.1%, either widen tier A or add a Data Streams adapter. | Data Feeds, 1h max age |
 | 10 | **Sequencer uptime feed**: if Chainlink does not publish one for Robinhood Chain | Without it, an outage cannot be detected on-chain. | required unless set to zero on purpose |

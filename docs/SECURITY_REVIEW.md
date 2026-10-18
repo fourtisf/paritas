@@ -1,6 +1,6 @@
 # Internal security review (2026-10-18)
 
-No Critical or High issue was found. Nine findings were fixed in the contracts with regression tests. Two remain open:
+No Critical or High issue was found. Eight findings were fixed in the contracts with regression tests. Two remain open:
 F-4 (deposit plus withdraw as an unclipped trade) and F-10 (a frozen token blocks withdrawals of the other one).
 
 **This is not an external audit.** Three independent reviewers and the author read the contracts in
