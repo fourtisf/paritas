@@ -100,4 +100,6 @@ npm run web        # :3000, set apps/web/.env.local from .env.example. On 31337 
    - Field mapping: `docs/DEMO_TO_PRODUCTION.md`.
 3. ~~Port the **landing**~~ (done) (`prototypes/paritas-landing.html` to `apps/web/src/app/page.tsx`) with `three/landing-scene.js`.
 4. Testnet rehearsal: fill `deployments/46630.json`, run `Deploy.s.sol`, run the indexer and the app against it.
+   Separately, paritas.live can run on testnet with test assets (`DeployTestnet.s.sol`, `deploy/testnet.sh`,
+   `docs/TESTNET.md`); that is a public demo, not the rehearsal.
 5. Mainnet only after the decisions in `docs/DECISIONS.md` are made by ALFA and an external audit is done. The config is ready and the launch steps are in `docs/MAINNET.md`.

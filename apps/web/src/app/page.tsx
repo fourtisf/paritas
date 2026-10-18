@@ -14,6 +14,8 @@ import { QuoteCard } from "@/components/landing/QuoteCard";
 import { RouterLab } from "@/components/landing/RouterLab";
 import { VaultCards } from "@/components/landing/VaultCards";
 import { pct, usd } from "@/components/landing/format";
+import { CHAIN_ID } from "@/lib/env";
+import { loadDeployment } from "@/lib/deployment.server";
 import appPreview from "@/components/landing/app-preview.jpg";
 
 /**
@@ -31,7 +33,8 @@ const Arrow = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
 );
 
-export default function Landing() {
+export default async function Landing() {
+  const testFeeds = (await loadDeployment(CHAIN_ID)).deployment?.mocks === true;
   return (
     <>
       <a className="skip" href="#main">Skip to content</a>
@@ -64,7 +67,7 @@ export default function Landing() {
             </div>
           </section>
 
-          <Marquee />
+          <Marquee testFeeds={testFeeds} />
 
           <section className="section" id="quote" data-pose="quote">
             <div className="wrap q-grid">

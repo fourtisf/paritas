@@ -122,6 +122,11 @@ sudo -iu paritas bash -c 'echo "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=PROJECT_ID"
 sudo -iu paritas bash /home/paritas/paritas/deploy/vps.sh
 ```
 
+## Testnet with test assets
+
+To run the app on Robinhood Chain testnet before mainnet, with test tokens and live prices, follow `docs/TESTNET.md`.
+It is one script, `deploy/testnet.sh`.
+
 ## Update to the latest commit
 
 ```bash

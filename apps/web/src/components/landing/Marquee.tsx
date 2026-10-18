@@ -21,9 +21,10 @@ function Tick({ v }: { v: number }) {
 
 /**
  * Price strip under the hero. A live market shows its Chainlink share price from GET /markets. A market that is not
- * live on this chain yet shows the Finnhub reference price from GET /prices, and the strip says so.
+ * live on this chain yet shows the Finnhub reference price from GET /prices, and the strip says so. On a deployment with
+ * test assets (testFeeds) the "Chainlink" prices are mock feeds that the keeper moves to the Finnhub price.
  */
-export function Marquee() {
+export function Marquee({ testFeeds = false }: { testFeeds?: boolean }) {
   const { bySym } = useMarkets();
   const pending = MARKETS.some((c) => !bySym.has(c.symbol));
   const ref = useRefPrices(pending);
@@ -43,7 +44,7 @@ export function Marquee() {
           {chg != null && <span className={chg >= 0 ? "up" : "down"}>{chg >= 0 ? "+" : "−"}{nf(Math.abs(chg))}%</span>}
         </span>
       ))}
-      <span className="mq muted">{rows.some((r) => r.ref) ? "Reference prices from Finnhub" : "Share prices from Chainlink"}</span>
+      <span className="mq muted">{testFeeds ? "Testnet: test price feeds that follow Finnhub" : rows.some((r) => r.ref) ? "Reference prices from Finnhub" : "Share prices from Chainlink"}</span>
     </>
   );
   return (

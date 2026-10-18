@@ -19,13 +19,14 @@
    - #7 audit.
    - #13 treasury.
    - Also #4 seed liquidity, #5 launch markets, #8 makers, #9 oracle, #10 sequencer feed.
-2. **External audit** done, with findings fixed or accepted in writing (ALFA).
-3. **Fill `deployments/4663.json`** (two people, `docs/VERIFY_ON_CHAIN.md`):
-   - `external` (26 TODOs)
-   - `roles`: multisig = the Safe, guardian, attester, treasury.
+2. **External audit** done, with findings fixed or accepted in writing (ALFA). Send firms `docs/AUDIT_SCOPE.md`.
+3. **Fill `deployments/4663.json`** (two people, `docs/VERIFY_ON_CHAIN.md`, signed on `docs/MAINNET_ADDRESSES.md`):
+   - `external` (21 TODOs)
+   - `roles` (4 TODOs): multisig = the Safe, guardian, attester, treasury.
 
    Never from an AI answer.
-4. **Testnet rehearsal first** (Michael), BRIEF section 9:
+4. **Testnet rehearsal first** (Michael), BRIEF section 9. This uses the real testnet assets and `Deploy.s.sol`; the
+   public testnet with test assets on paritas.live (`docs/TESTNET.md`) does not count:
    - deploy on 46630 and seed the vaults
    - 100+ trades across all venues and sessions
    - indexer and app in sync
