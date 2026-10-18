@@ -17,6 +17,7 @@ API_ENV=apps/api/.env
 WEB_ENV=apps/web/.env.production.local
 KEYSTORES="$HOME/.foundry/keystores"
 ADDRESS_FILE="$HOME/.foundry/paritas-deployer.address"
+DEPLOYER_ENV=deploy/deployer.env # the deployer's private key when you import one (gitignored, mode 600)
 step() { printf '\n== %s\n' "$*"; }
 setenv() { # setenv FILE KEY VALUE: replace the line or add it
   if grep -q "^$2=" "$1"; then sed -i "s|^$2=.*|$2=$3|" "$1"; else echo "$2=$3" >> "$1"; fi
@@ -68,17 +69,40 @@ else
 fi
 
 step "5/8 Deployer wallet"
-if [ ! -f "$KEYSTORES/paritas-deployer" ]; then
-  mkdir -p "$KEYSTORES"
-  echo "Creating the deployer wallet. Choose a strong password and keep it: you need it to deploy."
-  cast wallet new "$KEYSTORES" paritas-deployer
+# Either a private key you import (kept in deploy/deployer.env) or a password-protected Foundry keystore.
+if [ ! -f "$DEPLOYER_ENV" ] && [ ! -f "$KEYSTORES/paritas-deployer" ]; then
+  echo "Paste the private key of the wallet that pays for the deployment, then Enter. It is not shown on screen."
+  echo "Use a wallet that holds only the gas (about 0.02 ETH). Press Enter without a key to create a new wallet instead."
+  read -rs PK || PK=""
+  echo
+  if [ -n "$PK" ]; then
+    [[ "$PK" == 0x* ]] || PK="0x$PK"
+    if [[ ! "$PK" =~ ^0x[0-9a-fA-F]{64}$ ]]; then
+      echo "That is not a private key (64 hex characters). Nothing was saved; run this script again." >&2
+      exit 1
+    fi
+    (umask 077 && echo "DEPLOYER_PRIVATE_KEY=$PK" > "$DEPLOYER_ENV")
+    echo "Saved in $DEPLOYER_ENV (only the paritas user can read it)."
+  else
+    mkdir -p "$KEYSTORES"
+    echo "Creating the deployer wallet. Choose a strong password and keep it: you need it to deploy."
+    cast wallet new "$KEYSTORES" paritas-deployer
+  fi
 fi
-if ! grep -qE '^0x[0-9a-fA-F]{40}$' "$ADDRESS_FILE" 2>/dev/null; then
-  echo "Enter the deployer wallet password to read its address:"
-  A=$(cast wallet address --account paritas-deployer)
-  echo "$A" > "$ADDRESS_FILE"
+if [ -f "$DEPLOYER_ENV" ]; then
+  chmod 600 "$DEPLOYER_ENV"
+  DEPLOYER_KEY=$(grep '^DEPLOYER_PRIVATE_KEY=' "$DEPLOYER_ENV" | cut -d= -f2-)
+  DEPLOYER=$(env -u ETH_PASSWORD cast wallet address --private-key "$DEPLOYER_KEY")
+  SIGNER=(--private-key "$DEPLOYER_KEY")
+else
+  if ! grep -qE '^0x[0-9a-fA-F]{40}$' "$ADDRESS_FILE" 2>/dev/null; then
+    echo "Enter the deployer wallet password to read its address:"
+    A=$(cast wallet address --account paritas-deployer)
+    echo "$A" > "$ADDRESS_FILE"
+  fi
+  DEPLOYER=$(cat "$ADDRESS_FILE")
+  SIGNER=(--account paritas-deployer)
 fi
-DEPLOYER=$(cat "$ADDRESS_FILE")
 BAL=$(cast balance "$DEPLOYER" --rpc-url "$ROBINHOOD_RPC_URL")
 echo "deployer $DEPLOYER, balance $(cast from-wei "$BAL") ETH"
 if ! node -e 'process.exit(BigInt(process.argv[1]) >= 2n * 10n ** 16n ? 0 : 1)' "$BAL"; then
@@ -138,7 +162,7 @@ else
 
   step "7/8 Dry run, then deploy"
   cp "$DEP" "$DEP.before" # the dry run writes simulated addresses into the file; put it back unless we deploy
-  (cd contracts && forge script script/Deploy.s.sol --rpc-url robinhood --account paritas-deployer --sender "$DEPLOYER")
+  (cd contracts && forge script script/Deploy.s.sol --rpc-url robinhood "${SIGNER[@]}" --sender "$DEPLOYER")
   echo
   echo "Compare every line printed above with Blockscout and with docs/MAINNET_ADDRESSES.md."
   read -r -p "Type DEPLOY to deploy Paritas to Robinhood Chain mainnet: " ANSWER || ANSWER=""
@@ -149,7 +173,7 @@ else
   fi
   # --skip-simulation: gas comes from the node's eth_estimateGas, which includes the L1 data cost on this chain.
   OK=1
-  (cd contracts && forge script script/Deploy.s.sol --rpc-url robinhood --account paritas-deployer --sender "$DEPLOYER" \
+  (cd contracts && forge script script/Deploy.s.sol --rpc-url robinhood "${SIGNER[@]}" --sender "$DEPLOYER" \
     --broadcast --slow --skip-simulation) || OK=0
   if [ "$OK" = 0 ] || ! deployed; then
     # keep what forge wrote: after a broadcast it holds the addresses of everything it sent
@@ -161,11 +185,10 @@ else
   fi
   rm -f "$DEP.before"
   cp "$DEP" "$HOME/4663.deployed.json"
-  (cd contracts && forge script script/Deploy.s.sol --rpc-url robinhood --account paritas-deployer --sender "$DEPLOYER" \
+  (cd contracts && forge script script/Deploy.s.sol --rpc-url robinhood "${SIGNER[@]}" --sender "$DEPLOYER" \
     --resume --verify --verifier blockscout --verifier-url "$EXPLORER/api/") ||
-    echo "Source verification on Blockscout did not finish. The contracts are deployed. To retry: cd $ROOT/contracts &&" \
-      "forge script script/Deploy.s.sol --rpc-url robinhood --account paritas-deployer --sender $DEPLOYER --resume --verify" \
-      "--verifier blockscout --verifier-url $EXPLORER/api/"
+    echo "Source verification on Blockscout did not finish. The contracts are deployed and work; verifying the source" \
+      "can be redone later (docs/MAINNET.md)."
 fi
 
 step "8/8 API, indexer and web"
@@ -175,3 +198,6 @@ echo
 echo "Paritas is live on Robinhood Chain mainnet: https://paritas.live/app/trade"
 echo "Deployed addresses: $ROOT/$DEP (a copy is in $HOME/4663.deployed.json). Send this file to be committed."
 echo "Next: check on Blockscout that every owner is the timelock, then seed the vaults (docs/MAINNET.md)."
+if [ -f "$DEPLOYER_ENV" ]; then
+  echo "The deployer has no role after deployment. Delete its key from this server: rm $ROOT/$DEPLOYER_ENV"
+fi
