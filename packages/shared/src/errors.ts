@@ -32,6 +32,9 @@ export const ERROR_COPY: Record<string, string> = {
   BadSignature: "The market maker's signature did not check out.",
   QuoteMismatch: "The maker quote does not match your order.",
   RfqSizeOutOfRange: "Market makers quote orders from 25,000 to 2,000,000 USDG.",
+  InputNotReceived: "The vault did not receive the tokens for this order. Get a new quote.",
+  PartialFill: "The Uniswap pool could not take the whole order. Get a new quote.",
+  MultiplierChanged: "The stock token's share multiplier changed, for example after a split. Vaults stop quoting until Paritas confirms it.",
   ERC20InsufficientBalance: "Not enough balance for this transaction.",
   ERC20InsufficientAllowance: "Approve the token first.",
 };

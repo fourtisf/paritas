@@ -14,6 +14,12 @@ import {AggregatorV3Interface} from "../src/interfaces/External.sol";
 ///
 /// The script refuses to run while any TODO, zero or non-contract address remains, and prints what it
 /// read from each token and feed so a reviewer can compare against Blockscout before broadcasting.
+/// @dev The two Safe views the mainnet checks read.
+interface ISafe {
+    function getThreshold() external view returns (uint256);
+    function getOwners() external view returns (address[] memory);
+}
+
 contract Deploy is Script, DeployCore {
     string internal constant TODO = "TODO";
 
@@ -44,9 +50,18 @@ contract Deploy is Script, DeployCore {
             : vm.envOr("ENFORCE_ELIGIBILITY", false);
         require(block.chainid != 4663 || enforce, "eligibility must be enforced on mainnet");
         uint256 delay = vm.parseJsonUint(cfg, ".governance.timelockDelaySec");
+        if (block.chainid == 4663) {
+            ISafe safe = ISafe(roles.multisig);
+            require(safe.getThreshold() == vm.parseJsonUint(cfg, ".governance.multisigThreshold"), "Safe threshold differs from config");
+            require(safe.getOwners().length == vm.parseJsonUint(cfg, ".governance.multisigSigners"), "Safe owner count differs from config");
+            require(delay >= 2 days, "timelock delay under 48h");
+        }
 
         vm.startBroadcast();
         (, address deployer,) = vm.readCallers();
+        if (block.chainid == 4663) {
+            require(roles.multisig != deployer && roles.guardian != deployer && roles.attester != deployer, "a role is the deployer");
+        }
         Deployed memory d = _deployCore(deployer, roles, ext, stocks, enforce, delay);
         vm.stopBroadcast();
 

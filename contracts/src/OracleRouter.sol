@@ -10,7 +10,8 @@ import {
     StaleOracle,
     SequencerDown,
     SequencerGracePeriod,
-    OraclePausedByIssuer
+    OraclePausedByIssuer,
+    MultiplierChanged
 } from "./libraries/Errors.sol";
 
 /// @notice Normalises Chainlink prices to USD per 1 whole stock token, 18 decimals ("WAD").
@@ -19,9 +20,9 @@ import {
 contract OracleRouter is Ownable {
     struct Feed {
         AggregatorV3Interface aggregator;
-        uint8 decimals;
         bool useMultiplier; // multiply by stock.uiMultiplier() / 1e18 (VERIFY semantics first)
         bool checkIssuerPause; // honour stock.oraclePaused() for vault pricing
+        uint256 multiplier; // stock.uiMultiplier() when the feed was set; 0 if the token has none
     }
 
     mapping(address stock => Feed) public feeds;
@@ -38,8 +39,14 @@ contract OracleRouter is Ownable {
         onlyOwner
     {
         if (stock == address(0) || aggregator == address(0)) revert ZeroAddress();
-        uint8 dec = AggregatorV3Interface(aggregator).decimals();
-        feeds[stock] = Feed(AggregatorV3Interface(aggregator), dec, useMultiplier, checkIssuerPause);
+        AggregatorV3Interface(aggregator).decimals(); // fails early on an address that is not a feed
+        // A split or reverse split changes uiMultiplier. Vaults stop quoting until governance calls setFeed again
+        // (see vaultPrice), whichever way useMultiplier is set.
+        uint256 mult;
+        try IStockToken(stock).uiMultiplier() returns (uint256 m) {
+            mult = m;
+        } catch {}
+        feeds[stock] = Feed(AggregatorV3Interface(aggregator), useMultiplier, checkIssuerPause, mult);
         emit FeedSet(stock, aggregator, useMultiplier, checkIssuerPause);
     }
 
@@ -57,9 +64,8 @@ contract OracleRouter is Ownable {
         if (address(f.aggregator) == address(0)) revert NoFeed();
         (, int256 answer,, uint256 upd,) = f.aggregator.latestRoundData();
         if (answer <= 0 || upd == 0 || upd > block.timestamp) revert BadOracleAnswer();
-        priceWad = f.decimals <= 18
-            ? uint256(answer) * 10 ** (18 - f.decimals)
-            : uint256(answer) / 10 ** (f.decimals - 18);
+        uint8 dec = f.aggregator.decimals(); // read live: a proxy can move to an aggregator with other decimals
+        priceWad = dec <= 18 ? uint256(answer) * 10 ** (18 - dec) : uint256(answer) / 10 ** (dec - 18);
         if (f.useMultiplier) {
             uint256 mult = IStockToken(stock).uiMultiplier();
             if (mult == 0) revert BadOracleAnswer();
@@ -75,10 +81,16 @@ contract OracleRouter is Ownable {
         if (block.timestamp - updatedAt > maxAge) revert StaleOracle(updatedAt, maxAge);
     }
 
-    /// @notice Price for vault quotes and deposits: fresh, and the issuer has not flagged the price.
+    /// @notice Price for vault quotes and deposits: fresh, the issuer has not flagged the price, and the token's
+    /// multiplier is still the one governance confirmed with setFeed.
     function vaultPrice(address stock, uint256 maxAge) external view returns (uint256 priceWad) {
         priceWad = priceNoOlderThan(stock, maxAge);
-        if (feeds[stock].checkIssuerPause && IStockToken(stock).oraclePaused()) revert OraclePausedByIssuer();
+        Feed memory f = feeds[stock];
+        if (f.checkIssuerPause && IStockToken(stock).oraclePaused()) revert OraclePausedByIssuer();
+        if (f.multiplier != 0) {
+            uint256 m = IStockToken(stock).uiMultiplier();
+            if (m != f.multiplier) revert MultiplierChanged(m, f.multiplier);
+        }
     }
 
     function _checkSequencer() internal view {

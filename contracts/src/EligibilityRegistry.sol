@@ -14,11 +14,13 @@ contract EligibilityRegistry is Ownable, EIP712 {
     bytes32 public constant ATTESTATION_TYPEHASH =
         keccak256("Attestation(address account,uint64 validUntil,uint64 issuedAt)");
     uint64 public constant MAX_ATTESTATION_AGE = 1 days; // signature must be submitted within a day
+    uint64 public constant MAX_VALIDITY = 365 days; // no attestation lasts longer, whatever an attester signs
 
     bool public enforced;
     address public guardian; // may block accounts and revoke attesters, never unblock
     mapping(address => bool) public isAttester;
     mapping(address => uint64) public validUntil;
+    mapping(address => address) public attesterOf; // who signed the attestation behind validUntil
     mapping(address => bool) public blocked;
     mapping(address => bool) public isExempt; // protocol contracts (vaults, router) that hold tokens
 
@@ -40,18 +42,23 @@ contract EligibilityRegistry is Ownable, EIP712 {
     function isEligible(address account) external view returns (bool) {
         if (blocked[account]) return false;
         if (!enforced || isExempt[account]) return true;
-        return validUntil[account] >= block.timestamp;
+        // revoking an attester revokes every attestation it signed
+        return validUntil[account] >= block.timestamp && isAttester[attesterOf[account]];
     }
 
     /// @notice Submit an attester's EIP-712 signature for `account`.
     function attest(address account, uint64 until, uint64 issuedAt, bytes calldata signature) external {
         if (until <= block.timestamp || issuedAt > block.timestamp) revert BadAttestation();
         if (block.timestamp - issuedAt > MAX_ATTESTATION_AGE) revert BadAttestation();
+        if (until - issuedAt > MAX_VALIDITY) revert BadAttestation();
         bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(ATTESTATION_TYPEHASH, account, until, issuedAt)));
         address signer = ECDSA.recover(digest, signature);
         if (!isAttester[signer]) revert BadAttestation();
-        if (until > validUntil[account]) validUntil[account] = until;
-        emit Attested(account, until, signer);
+        if (until > validUntil[account] || !isAttester[attesterOf[account]]) {
+            validUntil[account] = until;
+            attesterOf[account] = signer;
+        }
+        emit Attested(account, validUntil[account], attesterOf[account]);
     }
 
     function attestationDigest(address account, uint64 until, uint64 issuedAt) external view returns (bytes32) {

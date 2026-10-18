@@ -4,11 +4,13 @@ pragma solidity 0.8.26;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IV3SwapRouter, IVenueAdapter} from "../interfaces/External.sol";
-import {ZeroAddress, NotRouter} from "../libraries/Errors.sol";
+import {ZeroAddress, NotRouter, PartialFill} from "../libraries/Errors.sol";
 
 /// @notice Fills a leg on a single Uniswap v3 pool through SwapRouter02.
 /// amountOutMinimum is 0 on purpose: the SwapRouter checks the price band for this leg and the
 /// route minimum right after this call, and the whole transaction reverts if either fails.
+/// A pool that runs out of liquidity takes only part of an exact-input swap; that reverts here, so no input is
+/// left behind in the adapter and the receipt never reports more than was swapped.
 contract UniswapV3Adapter is IVenueAdapter {
     using SafeERC20 for IERC20;
 
@@ -28,6 +30,7 @@ contract UniswapV3Adapter is IVenueAdapter {
     {
         if (msg.sender != router) revert NotRouter();
         uint24 fee = abi.decode(data, (uint24));
+        uint256 before = IERC20(tokenIn).balanceOf(address(this));
         IERC20(tokenIn).forceApprove(address(swapRouter), amountIn);
         amountOut = swapRouter.exactInputSingle(
             IV3SwapRouter.ExactInputSingleParams({
@@ -40,5 +43,7 @@ contract UniswapV3Adapter is IVenueAdapter {
                 sqrtPriceLimitX96: 0
             })
         );
+        uint256 spent = before - IERC20(tokenIn).balanceOf(address(this));
+        if (spent != amountIn) revert PartialFill(spent, amountIn);
     }
 }

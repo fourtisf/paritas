@@ -154,8 +154,14 @@ contract SwapRouter is Ownable, ReentrancyGuard {
         }
 
         uint256 legSum;
+        bool vaultLeg;
         for (uint256 i; i < p.legs.length; ++i) {
             if (p.legs[i].amountIn == 0) revert BadLegs();
+            // one vault leg per route, so the vault's largest order (clip) holds for the whole trade
+            if (p.legs[i].venue == Venue.Vault) {
+                if (vaultLeg) revert BadLegs();
+                vaultLeg = true;
+            }
             legSum += p.legs[i].amountIn;
         }
         if (legSum != toRoute) revert LegSumMismatch(legSum, toRoute);
@@ -192,7 +198,7 @@ contract SwapRouter is Ownable, ReentrancyGuard {
             address v = factory.vaultOf(p.stock);
             if (v == address(0)) revert NoVault();
             c.tokenIn.safeTransfer(v, leg.amountIn);
-            AnchorVault(v).swap(p.buy, address(this));
+            AnchorVault(v).swap(p.buy, leg.amountIn, address(this));
         } else if (leg.venue == Venue.Uniswap) {
             address a = venue[Venue.Uniswap];
             if (a == address(0)) revert VenueNotSet();

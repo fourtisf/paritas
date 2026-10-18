@@ -21,7 +21,8 @@ import {
     InsufficientInventory,
     AboveCap,
     SlippageExceeded,
-    NotEligible
+    NotEligible,
+    InputNotReceived
 } from "./libraries/Errors.sol";
 
 /// @notice One vault per stock token. Holds the stock token and USDG, quotes around the Chainlink price,
@@ -32,7 +33,7 @@ import {
 ///  - closed when the session is Closed, the market or protocol is paused, the oracle is stale,
 ///    or the issuer flags oraclePaused()
 ///  - withdrawals to yourself always work: no oracle, no pause, no session check, paid in kind
-///  - reserves are tracked internally, so donations cannot move the share price
+///  - reserves are tracked internally, so donations cannot move the share price or reach a trade
 contract AnchorVault is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -157,10 +158,12 @@ contract AnchorVault is ERC20, ReentrancyGuard {
 
     // ---------------------------------------------------------------- trading (router only)
 
-    /// @notice The router has already transferred the input token. amountIn = balance - reserve.
-    function swap(bool buy, address to) external onlyRouter nonReentrant returns (uint256 amountOut) {
-        uint256 amountIn = buy ? usdg.balanceOf(address(this)) - reserveUsd : stock.balanceOf(address(this)) - reserveStock;
+    /// @notice The router has already transferred `amountIn` of the input token. Only that amount is priced: tokens
+    /// that reach the vault any other way stay outside the reserves and never count as anyone's input.
+    function swap(bool buy, uint256 amountIn, address to) external onlyRouter nonReentrant returns (uint256 amountOut) {
         if (amountIn == 0) revert ZeroAmount();
+        uint256 unaccounted = buy ? usdg.balanceOf(address(this)) - reserveUsd : stock.balanceOf(address(this)) - reserveStock;
+        if (unaccounted < amountIn) revert InputNotReceived();
         (VaultMath.Result memory r, uint256 priceWad, Session s) = _quote(buy, amountIn);
         amountOut = r.amountOut;
         if (amountOut == 0) revert ZeroAmount();
@@ -224,7 +227,11 @@ contract AnchorVault is ERC20, ReentrancyGuard {
     {
         if (shares == 0) revert ZeroAmount();
         if (receiver == address(0)) revert ZeroAddress();
-        if (receiver != msg.sender && !eligibility.isEligible(receiver)) revert NotEligible(receiver);
+        if (receiver != msg.sender) {
+            // a blocked wallet may still withdraw, but only to itself (docs/DECISIONS.md #11)
+            if (eligibility.blocked(msg.sender)) revert NotEligible(msg.sender);
+            if (!eligibility.isEligible(receiver)) revert NotEligible(receiver);
+        }
         (usdOut, stockOut) = previewWithdraw(shares);
         if (usdOut < minUsd || stockOut < minStock) revert SlippageExceeded();
         _burn(msg.sender, shares);
@@ -276,9 +283,11 @@ contract AnchorVault is ERC20, ReentrancyGuard {
         t = params.tierOf(address(stock));
     }
 
-    /// @dev Vault shares are a claim on stock tokens, so they only move between eligible wallets.
+    /// @dev Vault shares are a claim on stock tokens, so they only move between eligible wallets, and never out of a
+    /// blocked one.
     function _update(address from, address to, uint256 value) internal override {
         if (from != address(0) && to != address(0) && to != DEAD) {
+            if (eligibility.blocked(from)) revert NotEligible(from);
             if (!eligibility.isEligible(to)) revert NotEligible(to);
         }
         super._update(from, to, value);

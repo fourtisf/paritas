@@ -30,24 +30,24 @@ Lines are non-blank, non-comment lines.
 
 | File | Lines | Purpose |
 |---|---:|---|
-| `src/AnchorVault.sol` | 235 | One vault per stock. ERC-20 LP shares. Quotes `price × (1 ± cost)` with session multipliers and inventory skew. Router-only swaps, deposits priced like a trade, withdrawals in kind. |
-| `src/SwapRouter.sol` | 197 | The only entry point for trades. Deadline, eligibility, pause, leg sums, band per leg, `minAmountOut`, protocol fee on the USDG side, receipt events. |
+| `src/AnchorVault.sol` | 241 | One vault per stock. ERC-20 LP shares. Quotes `price × (1 ± cost)` with session multipliers and inventory skew. Router-only swaps, deposits priced like a trade, withdrawals in kind. |
+| `src/SwapRouter.sol` | 202 | The only entry point for trades. Deadline, eligibility, pause, leg sums, band per leg, `minAmountOut`, protocol fee on the USDG side, receipt events. |
 | `src/ParamController.sol` | 145 | Every tunable with hard bounds in code. Owner is the timelock; the guardian can only pause. |
 | `src/RfqSettlement.sol` | 125 | EIP-712 maker quotes: allowlisted makers, bound to the taker, single-use nonce, expiry, size limits, maker-paid fee. |
 | `src/libraries/VaultMath.sol` | 84 | Vault quote, NAV and share math (WAD). |
-| `src/EligibilityRegistry.sol` | 81 | Attester-signed eligibility with expiry, blocklist and exemptions. Enforced on mainnet. |
-| `src/OracleRouter.sol` | 71 | Chainlink to USD WAD per token: staleness, sequencer uptime and grace period, issuer `oraclePaused`, optional `uiMultiplier`. |
+| `src/EligibilityRegistry.sol` | 87 | Attester-signed eligibility with expiry, blocklist and exemptions. Enforced on mainnet. |
+| `src/OracleRouter.sol` | 80 | Chainlink to USD WAD per token: staleness, sequencer uptime and grace period, issuer `oraclePaused`, optional `uiMultiplier`. |
 | `src/VaultFactory.sol` | 60 | CREATE2 vault per listed stock; the router is set once. |
 | `src/libraries/Types.sol` | 59 | Shared structs and enums. |
 | `src/libraries/SessionLib.sol` | 50 | New York clock: DST, holidays, early closes, the four sessions. |
 | `src/SessionController.sol` | 43 | On-chain holiday calendar and the current session. |
-| `src/libraries/Errors.sol` | 36 | Custom errors. |
-| `src/adapters/UniswapV3Adapter.sol` | 34 | Single-pool `exactInputSingle` through SwapRouter02. |
+| `src/libraries/Errors.sol` | 39 | Custom errors. |
+| `src/adapters/UniswapV3Adapter.sol` | 37 | Single-pool `exactInputSingle` through SwapRouter02. |
 | `src/interfaces/External.sol` | 29 | Chainlink, stock token and Uniswap interfaces. |
 | `src/FeeCollector.sol` | 15 | Receives fees; only the timelock sweeps. |
 | `script/DeployCore.sol` | 156 | Deploys and wires everything, hands ownership to the timelock. |
-| `script/Deploy.s.sol` | 117 | Mainnet entry: refuses TODO addresses, requires the Safe to be a contract and eligibility to be enforced. |
-| **Total** | **1,537** | 1,264 in `src/`, 273 in the deploy scripts. |
+| `script/Deploy.s.sol` | 130 | Mainnet entry: refuses TODO addresses, requires the Safe to be a contract and eligibility to be enforced. |
+| **Total** | **1,582** | 1,296 in `src/`, 286 in the deploy scripts. |
 
 OpenZeppelin `TimelockController` (48h delay) is deployed unmodified. The way Paritas uses it is in scope.
 
@@ -131,8 +131,8 @@ Each guarantee has a test today. Fuzz tests run 512 times by default and 5000 ti
 ```bash
 cd contracts
 forge build
-forge test                 # 61 tests: unit, fuzz, invariants, shared vectors
-forge test --profile ci    # 5000 fuzz runs
+forge test                 # 73 tests: unit, fuzz, invariants, shared vectors, review regressions
+FOUNDRY_PROFILE=ci forge test   # 5000 fuzz runs
 cd .. && npm run vectors   # regenerates spec/vectors/*.json from the Python reference
 ```
 
@@ -141,6 +141,7 @@ Supporting documents in the repo:
 - `config/protocol.json`: every parameter
 - `docs/DECISIONS.md`: open owner decisions
 - `docs/VERIFY_ON_CHAIN.md`: how external addresses are checked
+- `docs/SECURITY_REVIEW.md`: the internal review of 2026-10-18, its fixes and the two open findings
 
 ## What we ask for
 

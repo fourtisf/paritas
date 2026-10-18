@@ -51,3 +51,8 @@ error NonceUsed();
 error BadSignature();
 error QuoteMismatch();
 error RfqSizeOutOfRange(uint256 notionalUsdWad);
+
+// added after the internal security review (docs/SECURITY_REVIEW.md)
+error InputNotReceived();
+error PartialFill(uint256 spent, uint256 amountIn);
+error MultiplierChanged(uint256 current, uint256 expected);

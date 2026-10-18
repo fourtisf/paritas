@@ -88,7 +88,7 @@ contract AnchorVaultTest is Base {
 
     function test_OnlyRouterCanSwap() public {
         vm.expectRevert(NotRouter.selector);
-        nvdaVault.swap(true, address(this));
+        nvdaVault.swap(true, 1, address(this));
     }
 
     function test_SwapsGrowNavPerShareAtConstantPrice() public {

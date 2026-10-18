@@ -19,7 +19,7 @@ The product owner is ALFA (Fourtis.io), and Michael implements production. Code 
 
 | Path | Status | Notes |
 |---|---|---|
-| `contracts/` | **Done and tested** | Foundry with 61 tests (unit, fuzz, shared vectors). Do not redesign. Extend with tests. |
+| `contracts/` | **Done and tested** | Foundry with 73 tests (unit, fuzz, shared vectors, review regressions). Do not redesign. Extend with tests. Internal review: `docs/SECURITY_REVIEW.md`. |
 | `config/protocol.json` | **Source of truth** | Every parameter. It is read by the deploy script, the API and the web app. |
 | `config/holidays.json` | Source of truth | NYSE holidays and early closes as New York day indexes. |
 | `deployments/<chainId>.json` | Templates | 4663 is mainnet and 46630 is testnet; both are full of `TODO_VERIFY_ON_BLOCKSCOUT`. 31337 is written by the local deploy. |
@@ -52,8 +52,8 @@ The product owner is ALFA (Fourtis.io), and Michael implements production. Code 
 
 ```bash
 # contracts (Foundry; solc 0.8.26, via-IR)
-cd contracts && forge build && forge test            # 61 tests must pass
-forge test --profile ci                              # 5000 fuzz runs
+cd contracts && forge build && forge test            # 73 tests must pass
+FOUNDRY_PROFILE=ci forge test                        # 5000 fuzz runs
 
 # local chain with the prototype's markets and prices
 anvil --timestamp 1792504800                         # Tue 2026-10-20 10:00 New York: vaults open

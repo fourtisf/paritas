@@ -1170,6 +1170,11 @@ export const anchorVaultAbi = [
         "internalType": "bool"
       },
       {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
         "name": "to",
         "type": "address",
         "internalType": "address"
@@ -1632,6 +1637,11 @@ export const anchorVaultAbi = [
         "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "InputNotReceived",
+    "inputs": []
   },
   {
     "type": "error",
@@ -3302,11 +3312,6 @@ export const oracleRouterAbi = [
         "internalType": "contract AggregatorV3Interface"
       },
       {
-        "name": "decimals",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
         "name": "useMultiplier",
         "type": "bool",
         "internalType": "bool"
@@ -3315,6 +3320,11 @@ export const oracleRouterAbi = [
         "name": "checkIssuerPause",
         "type": "bool",
         "internalType": "bool"
+      },
+      {
+        "name": "multiplier",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -3572,6 +3582,22 @@ export const oracleRouterAbi = [
   },
   {
     "type": "error",
+    "name": "MultiplierChanged",
+    "inputs": [
+      {
+        "name": "current",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "expected",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "NoFeed",
     "inputs": []
   },
@@ -3685,6 +3711,19 @@ export const eligibilityRegistryAbi = [
   },
   {
     "type": "function",
+    "name": "MAX_VALIDITY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "attest",
     "inputs": [
       {
@@ -3736,6 +3775,25 @@ export const eligibilityRegistryAbi = [
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "attesterOf",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -5134,6 +5192,22 @@ export const uniswapV3AdapterAbi = [
   },
   {
     "type": "error",
+    "name": "PartialFill",
+    "inputs": [
+      {
+        "name": "spent",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "SafeERC20FailedOperation",
     "inputs": [
       {
@@ -5393,6 +5467,11 @@ export const paritasErrorsAbi = [
   },
   {
     "type": "error",
+    "name": "InputNotReceived",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InsufficientInventory",
     "inputs": []
   },
@@ -5441,6 +5520,22 @@ export const paritasErrorsAbi = [
     "type": "error",
     "name": "BadOracleAnswer",
     "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MultiplierChanged",
+    "inputs": [
+      {
+        "name": "current",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "expected",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
   },
   {
     "type": "error",
@@ -5561,5 +5656,21 @@ export const paritasErrorsAbi = [
     "type": "error",
     "name": "WrongTaker",
     "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PartialFill",
+    "inputs": [
+      {
+        "name": "spent",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
   }
 ] as const;
