@@ -80,7 +80,8 @@ sudo -iu paritas bash /home/paritas/paritas/deploy/mainnet.sh
 1. Creates the attester key for wallet verification (`docs/ELIGIBILITY.md`) and prints its address, which goes in
    `roles.attester`.
 2. Asks for the deployer wallet's private key (hidden, kept in `deploy/deployer.env`, mode 600) or, with an empty answer,
-   creates a password-protected keystore. It then asks for about 0.02 ETH for gas.
+   creates a password-protected keystore. It then asks for twice the deployment's gas at today's price (57 transactions,
+   about 30M gas: roughly 0.0003 to 0.003 ETH at 0.01 to 0.1 gwei). What is not spent stays in the wallet.
 3. Lists every address still `TODO` in `deployments/4663.json`.
 4. Dry run: prints what it read from every contract. It deploys only after you type `DEPLOY`.
 5. Checks that every Paritas contract has code, then restarts the API, the indexer and the web app.

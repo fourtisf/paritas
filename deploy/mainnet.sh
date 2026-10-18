@@ -72,7 +72,7 @@ step "5/8 Deployer wallet"
 # Either a private key you import (kept in deploy/deployer.env) or a password-protected Foundry keystore.
 if [ ! -f "$DEPLOYER_ENV" ] && [ ! -f "$KEYSTORES/paritas-deployer" ]; then
   echo "Paste the private key of the wallet that pays for the deployment, then Enter. It is not shown on screen."
-  echo "Use a wallet that holds only the gas (about 0.02 ETH). Press Enter without a key to create a new wallet instead."
+  echo "Use a wallet that holds only the gas (a few thousandths of an ETH). Press Enter without a key to create a new wallet instead."
   read -rs PK || PK=""
   echo
   if [ -n "$PK" ]; then
@@ -104,10 +104,16 @@ else
   SIGNER=(--account paritas-deployer)
 fi
 BAL=$(cast balance "$DEPLOYER" --rpc-url "$ROBINHOOD_RPC_URL")
+GAS_PRICE=$(cast gas-price --rpc-url "$ROBINHOOD_RPC_URL")
+# Deploy.s.sol is 57 transactions and about 30M gas. Ask for twice that at today's gas price, for the L1 data fee this
+# chain adds and a retry, and never less than 0.001 ETH. What is not spent stays in the wallet.
+NEED=$(node -e 'const n = BigInt(process.argv[1]) * 60_000_000n, min = 10n ** 15n; console.log(String(n > min ? n : min))' "$GAS_PRICE")
 echo "deployer $DEPLOYER, balance $(cast from-wei "$BAL") ETH"
-if ! node -e 'process.exit(BigInt(process.argv[1]) >= 2n * 10n ** 16n ? 0 : 1)' "$BAL"; then
+echo "gas price $(cast from-wei "$GAS_PRICE" gwei) gwei: the deployment costs about $(cast from-wei "$((NEED / 2))") ETH; it needs $(cast from-wei "$NEED") ETH to be safe"
+if ! node -e 'process.exit(BigInt(process.argv[1]) >= BigInt(process.argv[2]) ? 0 : 1)' "$BAL" "$NEED"; then
   echo
-  echo "Send at least 0.02 ETH on Robinhood Chain mainnet to $DEPLOYER (it pays for gas only), then run this script again."
+  echo "Send at least $(cast from-wei "$NEED") ETH on Robinhood Chain mainnet to $DEPLOYER (gas only; the rest stays in the wallet),"
+  echo "then run this script again."
   exit 0
 fi
 
