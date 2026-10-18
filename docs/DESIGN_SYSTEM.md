@@ -53,6 +53,7 @@ ALFA chose the **guilloché seal** (logo round 2, concept F). It is the site's g
   - `paritas-mark.svg`: the small seal.
   - `paritas-seal-2048.png`: full seal, transparent.
   - `paritas-x-profile.png`: X profile photo, 1000 × 1000. X crops it to a circle, so the reeded edge sits at 86% of the radius.
+  - `paritas-x-header.png`: X header, 1500 × 500. The copy sits top left, clear of the profile photo that covers the bottom left.
 - **Rules:**
   - Do not recolour the seal, put it on a colour, or add effects (glow, 3D, gold).
   - Use the full seal at 96 px and up. Below that, use the small seal.
