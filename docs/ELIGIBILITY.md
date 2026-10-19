@@ -17,7 +17,14 @@ own attester, and nobody uploads documents.
    - the wallet is blocked on-chain
 4. Otherwise the API's attester key signs an `EligibilityRegistry` attestation that lasts
    `eligibility.attestationTtlDays` (90 days).
-5. The wallet sends `attest()` (one transaction, small network fee) and can trade and provide liquidity.
+5. The API sends `attest()` itself from the attester key and pays the network fee (about 0.000003 ETH), so the person
+   confirms only one thing in their wallet: the free signature. The wallet can then trade and provide liquidity.
+   - A wallet that is already verified for more than 7 more days gets no new transaction.
+   - If the attester key has no ETH left, or the transaction fails, the API answers with the attestation and the
+     wallet sends `attest()` itself (one more confirmation, small network fee). The app's copy follows `free` from
+     `GET /eligibility`.
+   - Keep some ETH on the attester address (`roles.attester`, printed by `deploy/mainnet.sh`): 0.001 ETH covers
+     about 300 verifications. The API logs a warning when it runs low.
 
 The API keeps a record of every attestation it signs (`EligibilityGrant`): wallet, country, times and the signed
 declaration. It does not store IP addresses.

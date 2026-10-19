@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { Hex } from "viem";
-import { attestWallet, attesterAddress } from "../lib/eligibility";
+import { attestWallet, attesterAddress, relayFunded } from "../lib/eligibility";
 import { geoReady } from "../lib/geo";
 
 const Body = z.object({
@@ -24,8 +24,8 @@ function limited(ip: string) {
 }
 
 export default async function eligibilityRoutes(app: FastifyInstance) {
-  /** Whether verification is open here (the app hides the button otherwise). */
-  app.get("/eligibility", async () => ({ open: attesterAddress !== null, attester: attesterAddress, geo: geoReady() }));
+  /** Whether verification is open here (the app hides the button otherwise), and whether Paritas pays the fee. */
+  app.get("/eligibility", async () => ({ open: attesterAddress !== null, attester: attesterAddress, geo: geoReady(), free: await relayFunded() }));
 
   /** Declaration signature in, EligibilityRegistry attestation out (lib/eligibility.ts). */
   app.post("/eligibility/attest", async (req, reply) => {
@@ -37,7 +37,7 @@ export default async function eligibilityRoutes(app: FastifyInstance) {
       req.log.info({ error: r.error, account: b.data.account }, "eligibility refused");
       return reply.code(r.status).send({ error: r.error, message: r.message });
     }
-    req.log.info({ account: r.attestation.account, country: r.country }, "eligibility granted");
-    return r.attestation;
+    req.log.info({ account: r.attestation.account, country: r.country, txHash: r.txHash, alreadyVerified: r.alreadyVerified }, "eligibility granted");
+    return { ...r.attestation, txHash: r.txHash, alreadyVerified: r.alreadyVerified };
   });
 }

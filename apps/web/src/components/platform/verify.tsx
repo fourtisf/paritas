@@ -1,8 +1,9 @@
 "use client";
 /**
- * Wallet verification without KYC (docs/ELIGIBILITY.md). The wallet signs the declaration from @paritas/shared, the
- * API checks the connection's country and answers with an attestation, and the wallet submits it with
- * EligibilityRegistry.attest(). Shown only when the API has an attester (GET /eligibility).
+ * Wallet verification without KYC (docs/ELIGIBILITY.md). The wallet signs the declaration from @paritas/shared (one
+ * confirmation, free), the API checks the connection's country and submits the attestation with
+ * EligibilityRegistry.attest() itself. Only if the API could not send it (txHash null) does the wallet submit it.
+ * Shown only when the API has an attester (GET /eligibility).
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -21,32 +22,34 @@ const DAYS = PROTOCOL.eligibility.attestationTtlDays;
 /** The API refused (region, location, rate limit): its message is already plain English. */
 class Refused extends Error {}
 
-export function useVerifyOpen() {
+/** open: verification is available. free: Paritas sends attest() and pays its fee, so the wallet only signs. */
+function useEligibilityInfo() {
   const q = useQuery({
     queryKey: ["eligibility"],
     queryFn: async () => {
       const r = await fetch(`${API_URL}/eligibility`);
-      return r.ok ? ((await r.json()) as { open: boolean }) : { open: false };
+      return r.ok ? ((await r.json()) as { open: boolean; free?: boolean }) : { open: false };
     },
     staleTime: 60_000,
   });
-  return q.data?.open === true;
+  return { open: q.data?.open === true, free: q.data?.free === true };
 }
+export const useVerifyOpen = () => useEligibilityInfo().open;
 
 export function VerifyModal({ onDone }: { onDone?: () => void }) {
   const { address } = useAccount();
   const config = useConfig();
   const { d } = useDeployment();
   const ui = useUI();
+  const { free } = useEligibilityInfo();
   const [agree, setAgree] = useState(false);
-  const [step, setStep] = useState<"idle" | "sign" | "check" | "send">("idle");
+  const [step, setStep] = useState<"idle" | "sign" | "check" | "save" | "send">("idle");
   const [err, setErr] = useState<string | null>(null);
 
   const run = async () => {
     if (!address) return;
     setErr(null);
     try {
-      await ensureChain(config);
       setStep("sign");
       const issuedAt = Number((await getBlock(config, { chainId: CHAIN_ID })).timestamp); // chain time, as the API checks it
       const signature = await signMessage(config, { account: address, message: declarationMessage({ account: address, chainId: CHAIN_ID, issuedAt }) });
@@ -58,16 +61,22 @@ export function VerifyModal({ onDone }: { onDone?: () => void }) {
       });
       const body = await r.json().catch(() => ({}));
       if (!r.ok) throw new Refused(body.message ?? "Verification is not available right now. Try again later.");
-      const a = body as Attestation;
-      setStep("send");
-      const hash = await writeContract(config, {
-        chainId: CHAIN_ID,
-        address: d.paritas.eligibilityRegistry,
-        abi: eligibilityRegistryAbi,
-        functionName: "attest",
-        args: [a.account, BigInt(a.validUntil), BigInt(a.issuedAt), a.signature],
-      });
-      await waitForTransactionReceipt(config, { hash });
+      const a = body as Attestation & { txHash: `0x${string}` | null; alreadyVerified: boolean };
+      if (a.txHash) {
+        setStep("save"); // Paritas sent attest(): nothing more to confirm
+        await waitForTransactionReceipt(config, { chainId: CHAIN_ID, hash: a.txHash });
+      } else if (!a.alreadyVerified) {
+        setStep("send"); // the API could not send it: the wallet submits the same attestation
+        await ensureChain(config);
+        const hash = await writeContract(config, {
+          chainId: CHAIN_ID,
+          address: d.paritas.eligibilityRegistry,
+          abi: eligibilityRegistryAbi,
+          functionName: "attest",
+          args: [a.account, BigInt(a.validUntil), BigInt(a.issuedAt), a.signature],
+        });
+        await waitForTransactionReceipt(config, { chainId: CHAIN_ID, hash });
+      }
       ui.closeModal();
       ui.toast("Wallet verified", `You can trade and provide liquidity for ${DAYS} days.`);
       onDone?.();
@@ -77,7 +86,7 @@ export function VerifyModal({ onDone }: { onDone?: () => void }) {
     }
   };
 
-  const label = { idle: "Sign and verify", sign: "Sign in your wallet…", check: "Checking…", send: "Confirm in your wallet…" }[step];
+  const label = { idle: "Sign and verify", sign: "Sign in your wallet…", check: "Checking…", save: "Saving on Robinhood Chain…", send: "Confirm in your wallet…" }[step];
   return (
     <Modal label="Verify your wallet">
       <ModalHead title="Verify your wallet" />
@@ -97,8 +106,10 @@ export function VerifyModal({ onDone }: { onDone?: () => void }) {
             <Icon n="info" />
           </span>
           <span>
-            You sign a message, which is free, then send one transaction with a small network fee. We check your country
-            from your connection and keep your signed statement. We do not ask for documents.{" "}
+            {free
+              ? "You sign one message. It is free: Paritas saves it on-chain and pays the network fee."
+              : "You sign a message, which is free, then send one transaction with a small network fee."}{" "}
+            We check your country from your connection and keep your signed statement. We do not ask for documents.{" "}
             <a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">
               IP geolocation by DB-IP
             </a>
