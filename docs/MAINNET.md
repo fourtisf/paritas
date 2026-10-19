@@ -85,7 +85,8 @@ sudo -iu paritas bash /home/paritas/paritas/deploy/mainnet.sh
 3. Looks up every address still `TODO` in `deployments/4663.json` (`deploy/find-addresses.mjs`), from the official pages
    only: Paxos (USDG), Uniswap's Robinhood Chain deployments, docs.robinhood.com/chain (stock tokens) and Chainlink's feed
    directory. It proposes an address only when the chain confirms it (symbol and decimals, Robinhood's stock-token
-   functions, the feed's own description, Uniswap's factory links). It asks for your Safe (checked against `governance` in config);
+   functions, a feed proxy whose description and Chainlink directory name both name the ticker, such as
+   `RHNVDA / USD` and `Robinhood NVDA / USD`, Uniswap's factory links). It asks for your Safe (checked against `governance` in config);
    Enter creates a 1-of-1 Safe owned by the deployer wallet, from Safe's official v1.4.1 contracts (code hashes
    checked). Enter again makes that Safe the guardian and the treasury. It writes nothing until you type `YES`.
 4. Dry run: prints what it read from every contract. It deploys only after you type `DEPLOY`.

@@ -9,8 +9,9 @@
 //   stock tokens, feeds  docs.robinhood.com/chain, Chainlink's feed directory and its Robinhood tokenized equities page
 // What the chain must confirm before an address is proposed:
 //   USDG          symbol() USDG and decimals() 6
-//   stock token   symbol() is the ticker (NVDA or NVDAx), decimals(), and Robinhood's oraclePaused() and uiMultiplier()
-//   feed          description() "<ticker> / USD", decimals(), and a positive latestRoundData() answer
+//   stock token   symbol() is the ticker (NVDA, NVDAx or RHNVDA), decimals(), and Robinhood's oraclePaused() and uiMultiplier()
+//   feed          a proxy (not the aggregator behind it) whose description() and Chainlink directory name both name the
+//                 ticker ("RHNVDA / USD", "Robinhood NVDA / USD"), decimals(), and a positive latestRoundData() answer
 //   Uniswap       the factory answers feeAmountTickSpacing(500) = 10; SwapRouter02 and QuoterV2 report that factory
 //   Safe          getThreshold() and getOwners() match config/protocol.json (governance.multisig*)
 // With Enter at the Safe question it creates a 1-of-1 Safe owned by the deployer wallet (DEPLOYER_PRIVATE_KEY), from
@@ -181,18 +182,29 @@ if (LIST) {
   process.exit(0);
 }
 const tickerOf = (s) => s.toUpperCase().replace(/X$/, "");
+// The names Robinhood and Chainlink use for a ticker: NVDA, NVDAx, RHNVDA, "Robinhood NVDA"
+const namesTicker = (t, s) => s !== undefined && [t, `${t}X`, `RH${t}`, `RH${t}X`, `ROBINHOOD ${t}`, `ROBINHOOD ${t}X`].includes(s.trim().toUpperCase());
+const baseOf = (desc) => desc?.match(/^\s*(.+?)\s*(?:\/|-)\s*USD\s*$/i)?.[1]; // "RHNVDA / USD", "Robinhood SGOV-USD"
+const lower = (a) => a?.toLowerCase();
+const dirByProxy = new Map(clFeeds.filter((f) => f.proxyAddress).map((f) => [lower(f.proxyAddress), f]));
+// The directory lists each feed's proxy and the aggregator behind it. Both answer description(); only the proxy is used.
+const aggregatorsOnly = new Set(clFeeds.map((f) => lower(f.contractAddress)).filter((a) => a && !dirByProxy.has(a)));
+const narrow = (xs, keep) => (xs.length > 1 && xs.some(keep) ? xs.filter(keep) : xs);
 const now = (await client.getBlock()).timestamp; // chain time, as the feeds use
 const markets = {};
 const missingMarkets = []; // not on the official pages (yet): left out of this deployment, added later via the timelock
 for (const m of cfg.markets) {
   const t = tickerOf(m.symbol);
-  const tk = tokens.filter((x) => tickerOf(x.sym) === t);
+  const tk = tokens.filter((x) => namesTicker(t, x.sym));
+  // on-chain description() ("RHNVDA / USD") and the directory's name ("Robinhood NVDA / USD") must both name the ticker
   const fd = feeds.filter((x) => {
-    const base = x.desc.split("/")[0]?.trim() ?? "";
-    return /\/\s*USD\b/i.test(x.desc) && tickerOf(base) === t && x.answer !== undefined && x.answer > 0n;
+    if (aggregatorsOnly.has(lower(x.a)) || x.answer === undefined || x.answer <= 0n) return false;
+    const dir = dirByProxy.get(lower(x.a));
+    return [x.desc, ...(dir ? [dir.name ?? ""] : [])].every((d) => namesTicker(t, baseOf(d)));
   });
-  // with more than one feed, prefer the one named after the token's own symbol ("NVDAx / USD" for NVDAx)
-  const fdPick = fd.length > 1 && tk.length === 1 ? fd.filter((x) => x.desc.split("/")[0].trim() === tk[0].sym) : fd;
+  // with more than one feed, prefer a proxy from Chainlink's directory, then the one named after the token's own symbol
+  let fdPick = narrow(fd, (x) => dirByProxy.has(lower(x.a)));
+  if (tk.length === 1) fdPick = narrow(fdPick, (x) => baseOf(x.desc).trim() === tk[0].sym);
   // two candidates is a real ambiguity and stops everything; none means the market is not live on the chain yet
   if (tk.length > 1) problems.push(`${m.symbol} token: ${tk.length} Robinhood stock tokens answer as ${t}: ${tk.map((x) => `${x.a} (${x.sym})`).join(", ")}`);
   if (fdPick.length > 1) problems.push(`${m.symbol} feed: ${fdPick.length} feeds for ${t} / USD: ${fdPick.map((x) => `${x.a} (${x.desc})`).join(", ")}`);
@@ -201,13 +213,12 @@ for (const m of cfg.markets) {
     continue;
   }
   if (tk.length === 1 && fdPick.length === 1) {
-    const meta = clFeeds.find((f) => f.proxyAddress && f.proxyAddress.toLowerCase() === fdPick[0].a.toLowerCase());
-    markets[m.symbol] = { token: tk[0], feed: fdPick[0], heartbeat: Number(meta?.heartbeat ?? 0) };
+    markets[m.symbol] = { token: tk[0], feed: fdPick[0], heartbeat: Number(dirByProxy.get(lower(fdPick[0].a))?.heartbeat ?? 0) };
   }
 }
 
 // ------------------------------------------------------------------ sequencer uptime feed
-const seq = feeds.filter((x) => /sequencer|uptime/i.test(x.desc) && (x.answer === 0n || x.answer === 1n));
+const seq = feeds.filter((x) => /sequencer|uptime/i.test(x.desc) && (x.answer === 0n || x.answer === 1n) && !aggregatorsOnly.has(lower(x.a)));
 const seqMeta = clFeeds.filter((f) => /sequencer|uptime/i.test(`${f.name ?? ""} ${f.feedType ?? ""}`) && f.proxyAddress);
 let sequencer = seq.length === 1 ? seq[0].a : seqMeta.length === 1 ? getAddress(seqMeta[0].proxyAddress.toLowerCase()) : undefined;
 
@@ -236,7 +247,7 @@ for (const m of cfg.markets) {
 }
 row("Sequencer uptime feed", sequencer, sequencer ? "Chainlink L2 sequencer feed" : "");
 
-if (!Object.keys(markets).length) problems.push("No market has both a stock token and a live feed on the official pages.");
+if (!Object.keys(markets).length) problems.push(`No market has both a stock token and a live feed on the official pages. Stock tokens found: ${tokens.map((x) => x.sym).join(" ") || "none"}.`);
 if (problems.length) {
   say();
   say("Not proposed (the official pages and the chain do not agree):");
