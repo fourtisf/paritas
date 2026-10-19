@@ -5,10 +5,12 @@
  *
  * Streams: SwapRouter (Fill, RouteExecuted) | every AnchorVault (Sync, Deposit, Withdraw) |
  *          TimelockController (CallScheduled, CallExecuted, Cancelled) | Chainlink feeds -> candles
+ * On start it also fills 30 days of candles from the feeds' past rounds (lib/backfill.ts).
  */
 import { parseAbi, type Hex, type Log } from "viem";
 import { Redis } from "ioredis";
 import { anchorVaultAbi, costBps, decodeRouteLogs, PROTOCOL } from "@paritas/shared";
+import { backfillCandles, feedAbi, TIMEFRAMES } from "./lib/backfill";
 import { chainNow, client, deployment } from "./lib/chain";
 import { db, big } from "./lib/db";
 import { env } from "./lib/env";
@@ -19,7 +21,6 @@ const timelockAbi = parseAbi([
   "event CallExecuted(bytes32 indexed id, uint256 indexed index, address target, uint256 value, bytes data)",
   "event Cancelled(bytes32 indexed id)",
 ]);
-const feedAbi = parseAbi(["function latestRoundData() view returns (uint80, int256, uint256, uint256, uint80)", "function decimals() view returns (uint8)"]);
 
 const blockTime = new Map<bigint, Date>();
 async function timeOf(n: bigint) {
@@ -124,7 +125,7 @@ async function sampleCandles(stocks: Record<string, { token: Hex; chainlinkFeed:
     if (answer <= 0n) continue;
     const dec = await client.readContract({ address: s.chainlinkFeed, abi: feedAbi, functionName: "decimals" });
     const p = answer * 10n ** BigInt(18 - dec);
-    for (const [tf, ms] of [["15m", 9e5], ["1h", 36e5], ["6h", 216e5]] as const) {
+    for (const [tf, ms] of TIMEFRAMES) {
       const t = new Date(Math.floor(now / ms) * ms);
       const key = { stock_tf_t: { stock: s.token.toLowerCase(), tf, t } };
       const ex = await db.candle.findUnique({ where: key });
@@ -148,6 +149,7 @@ async function loop() {
     await new Promise((r) => setTimeout(r, 60_000)); // e.g. mainnet before deployments/4663.json is filled
   }
   const start = BigInt(d.paritas.deployedAtBlock || 0);
+  backfillCandles(d.stocks).catch((e) => console.error("backfill error (retried at the next start)", e));
   for (;;) {
     try {
       const head = (await client.getBlockNumber()) - BigInt(env.INDEXER_CONFIRMATIONS);
