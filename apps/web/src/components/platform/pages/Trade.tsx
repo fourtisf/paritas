@@ -11,7 +11,7 @@ import { parseUnits } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useConfig } from "wagmi";
 import { getBlock } from "wagmi/actions";
-import { TIERS, type VenueId } from "@paritas/shared";
+import { explorerAddress, TIERS, type VenueId } from "@paritas/shared";
 import { CHAIN_ID } from "@/lib/wagmi";
 import { ago, clamp, compact, fmtPct, nf, short, units } from "@/lib/format";
 import { routeRowFromReceipt, useCandles, useFills, useMarketMap, toFill, type UIFill } from "@/hooks/data";
@@ -64,7 +64,7 @@ export function TradePage() {
   const live = useLiveIds();
 
   const [side, setSide] = useState<Side>("buy");
-  const [amt, setAmt] = useState(10_000);
+  const [amt, setAmt] = useState(100);
   const [raw, setRaw] = useState<string | null>(null); // the input while focused
   const [tf, setTf] = useState<"1D" | "1W" | "1M">("1D");
   const [tape, setTape] = useState<"all" | "mine">("all");
@@ -195,6 +195,7 @@ export function TradePage() {
               <div className="mk-name">
                 {m.name} · Tier {m.tier} · {CHAIN_NAME}
               </div>
+              <TokenCa sym={m.symbol} token={m.token} />
             </div>
           </div>
           <div className="seg" role="group" aria-label="Time range">
@@ -391,7 +392,7 @@ export function TradePage() {
                 {buy ? <TokBtn sym="USDG" /> : <PickBtn sym={m.symbol} onPick={select} />}
               </div>
               <div className="presets">
-                {[1000, 10000, 50000, 250000].map((n) => (
+                {[10, 50, 100].map((n) => (
                   <button
                     key={n}
                     className="preset"
@@ -400,7 +401,7 @@ export function TradePage() {
                       setRaw(null);
                     }}
                   >
-                    ${n / 1000}k
+                    ${n}
                   </button>
                 ))}
               </div>
@@ -630,6 +631,32 @@ function MarketPicker({ onPick }: { onPick(s: string): void }) {
           ))}
       </div>
     </>
+  );
+}
+
+/** The stock token's contract address (CA) from the deployment file, to copy or open on Blockscout. */
+function TokenCa({ sym, token }: { sym: string; token: string }) {
+  const ui = useUI();
+  const url = explorerAddress(CHAIN_ID, token);
+  return (
+    <div className="mh-ca">
+      <span>CA</span>
+      <span className="num t2" title={token}>{short(token)}</span>
+      <button
+        aria-label={`Copy the ${sym} contract address`}
+        onClick={() => {
+          navigator.clipboard?.writeText(token).catch(() => {});
+          ui.toast("Address copied", `${sym} · ${token}`);
+        }}
+      >
+        <Icon n="copy" />
+      </button>
+      {url && (
+        <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${sym} on Blockscout`}>
+          <Icon n="ext" />
+        </a>
+      )}
+    </div>
   );
 }
 

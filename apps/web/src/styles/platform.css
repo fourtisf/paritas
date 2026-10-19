@@ -147,6 +147,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .mh{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:18px 22px 6px;flex-wrap:wrap}
 .mh-l{display:flex;align-items:center;gap:14px}
 .mh-sym{font-stretch:125%;font-weight:700;font-size:22px;line-height:1.1;letter-spacing:-.01em}
+.mh-ca{display:flex;align-items:center;gap:4px;margin-top:3px;font-size:12px;color:var(--muted)}
+.mh-ca > span:first-child{font-weight:650;margin-right:2px}
+.mh-ca button,.mh-ca a{display:inline-grid;place-items:center;width:22px;height:22px;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;padding:0}
+.mh-ca button:hover,.mh-ca a:hover{color:var(--text);background:var(--s2)}
+.mh-ca .ic{width:13px;height:13px}
 .mh-px{display:flex;align-items:baseline;gap:10px;margin-top:4px;flex-wrap:wrap}
 .mh-px b{font-size:28px;font-weight:650;letter-spacing:-.02em;line-height:1.1}
 .mh-stats{display:flex;gap:22px;padding:4px 22px 12px;flex-wrap:wrap}
