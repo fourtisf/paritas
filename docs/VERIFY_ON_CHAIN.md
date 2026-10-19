@@ -2,6 +2,10 @@
 
 Do this for every address. Two people check mainnet independently.
 
+`deploy/mainnet.sh` can do steps 1 to 3 for you (`deploy/find-addresses.mjs`): on the server it opens the official pages
+listed below, keeps only the addresses the chain confirms, and prints a Blockscout link for each one before it asks for
+`YES`. It never takes an address from anywhere else.
+
 1. Get the address from the **issuer's official page**: Robinhood docs for stock tokens, Paxos for USDG, Chainlink's data feeds page for Robinhood Chain, Uniswap's deployments page.
    - Never take it from a blog, Discord, a search snippet or an AI answer.
 2. Open it on the explorer:

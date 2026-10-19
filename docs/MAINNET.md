@@ -82,7 +82,11 @@ sudo -iu paritas bash /home/paritas/paritas/deploy/mainnet.sh
 2. Asks for the deployer wallet's private key (hidden, kept in `deploy/deployer.env`, mode 600) or, with an empty answer,
    creates a password-protected keystore. It then asks for twice the deployment's gas at today's price (57 transactions,
    about 30M gas: roughly 0.0003 to 0.003 ETH at 0.01 to 0.1 gwei). What is not spent stays in the wallet.
-3. Lists every address still `TODO` in `deployments/4663.json`.
+3. Looks up every address still `TODO` in `deployments/4663.json` (`deploy/find-addresses.mjs`), from the official pages
+   only: Paxos (USDG), Uniswap's Robinhood Chain deployments, docs.robinhood.com/chain (stock tokens) and Chainlink's feed
+   directory. It proposes an address only when the chain confirms it (symbol and decimals, Robinhood's stock-token
+   functions, the feed's own description, Uniswap's factory links). It asks for your Safe (checked 3-of-5), guardian
+   and treasury, and writes nothing until you type `YES`.
 4. Dry run: prints what it read from every contract. It deploys only after you type `DEPLOY`.
 5. Checks that every Paritas contract has code, then restarts the API, the indexer and the web app.
 6. Send the resulting `deployments/4663.json` to be committed.

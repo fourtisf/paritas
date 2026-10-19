@@ -154,10 +154,14 @@ else
     console.log(out.join("\n"));
   ' "$ROOT/$DEP")
   if [ -n "$MISSING" ]; then
-    echo "Still to fill from Blockscout (docs/MAINNET_ADDRESSES.md, two people check each one):"
-    echo "$MISSING" | sed 's/^/  /'
-    echo "roles.attester is this server's attester: $ATTESTER"
-    exit 0
+    echo "Looking the addresses up on the official pages, and checking each one on-chain:"
+    if ! node deploy/find-addresses.mjs "$ROOT/$DEP" "$ROBINHOOD_RPC_URL" "$DEPLOYER" "$ATTESTER"; then
+      echo
+      echo "Still to fill (docs/MAINNET_ADDRESSES.md):"
+      echo "$MISSING" | sed 's/^/  /'
+      echo "roles.attester is this server's attester: $ATTESTER"
+      exit 0
+    fi
   fi
   SET_ATTESTER=$(node -e 'console.log(require(process.argv[1]).roles.attester)' "$ROOT/$DEP")
   if [ "${SET_ATTESTER,,}" != "${ATTESTER,,}" ]; then
