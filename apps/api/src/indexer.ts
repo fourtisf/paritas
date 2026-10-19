@@ -11,7 +11,7 @@ import { parseAbi, type Hex, type Log } from "viem";
 import { Redis } from "ioredis";
 import { anchorVaultAbi, costBps, decodeRouteLogs, PROTOCOL } from "@paritas/shared";
 import { backfillCandles, feedAbi, TIMEFRAMES } from "./lib/backfill";
-import { chainNow, client, deployment } from "./lib/chain";
+import { brief, chainNow, client, deployment } from "./lib/chain";
 import { db, big } from "./lib/db";
 import { env } from "./lib/env";
 
@@ -117,13 +117,23 @@ async function indexTimelock(from: bigint, to: bigint, timelock: Hex) {
   }
 }
 
+// feed decimals, re-read every 10 minutes (display only; the contracts read them live)
+const decimals = new Map<string, { d: number; at: number }>();
+async function decimalsOf(feed: Hex) {
+  const c = decimals.get(feed);
+  if (c && Date.now() - c.at < 600_000) return c.d;
+  const d = await client.readContract({ address: feed, abi: feedAbi, functionName: "decimals" });
+  decimals.set(feed, { d, at: Date.now() });
+  return d;
+}
+
 /** 15m / 1h / 6h candles from the oracle price, sampled each loop. Buckets use chain time, like fills do. */
 async function sampleCandles(stocks: Record<string, { token: Hex; chainlinkFeed: Hex }>) {
   const now = (await chainNow()) * 1000;
   for (const s of Object.values(stocks)) {
     const [, answer] = await client.readContract({ address: s.chainlinkFeed, abi: feedAbi, functionName: "latestRoundData" }).catch(() => [0n, 0n] as const);
     if (answer <= 0n) continue;
-    const dec = await client.readContract({ address: s.chainlinkFeed, abi: feedAbi, functionName: "decimals" });
+    const dec = await decimalsOf(s.chainlinkFeed);
     const p = answer * 10n ** BigInt(18 - dec);
     for (const [tf, ms] of TIMEFRAMES) {
       const t = new Date(Math.floor(now / ms) * ms);
@@ -141,7 +151,7 @@ async function sampleCandles(stocks: Record<string, { token: Hex; chainlinkFeed:
 /** Its own loop, so a slow or failing log scan (catching up, RPC errors) never stops the price chart. */
 async function sampleForever(stocks: Record<string, { token: Hex; chainlinkFeed: Hex }>) {
   for (;;) {
-    await sampleCandles(stocks).catch((e) => console.error("candle error", e));
+    await sampleCandles(stocks).catch((e) => console.error(`candle error: ${brief(e)}`));
     await new Promise((r) => setTimeout(r, 2000));
   }
 }
@@ -157,15 +167,17 @@ async function loop() {
     await new Promise((r) => setTimeout(r, 60_000)); // e.g. mainnet before deployments/4663.json is filled
   }
   const start = BigInt(d.paritas.deployedAtBlock || 0);
-  backfillCandles(d.stocks).catch((e) => console.error("backfill error (retried at the next start)", e));
+  backfillCandles(d.stocks).catch((e) => console.error(`backfill error (retried at the next start): ${brief(e)}`));
   sampleForever(d.stocks);
   let logged = 0;
+  let range = "";
   for (;;) {
     try {
       const head = (await client.getBlockNumber()) - BigInt(env.INDEXER_CONFIRMATIONS);
       const from = (await cursor("main", start)) + 1n;
       if (from <= head) {
         const to = from + BigInt(env.INDEXER_BATCH_BLOCKS) - 1n < head ? from + BigInt(env.INDEXER_BATCH_BLOCKS) - 1n : head;
+        range = ` at blocks ${from}-${to}`;
         const routerLogs = await client.getLogs({ address: d.paritas.swapRouter, fromBlock: from, toBlock: to });
         await indexRouter(routerLogs, d.paritas.swapRouter);
         await indexVaults(from, to, d.paritas.vaults);
@@ -180,7 +192,7 @@ async function loop() {
         }
       }
     } catch (e) {
-      console.error("indexer error", e);
+      console.error(`indexer error${range}: ${brief(e)}`);
     }
     await new Promise((r) => setTimeout(r, 2000));
   }

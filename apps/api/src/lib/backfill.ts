@@ -10,7 +10,7 @@ export const feedAbi = parseAbi([
 /** Candle sizes the API serves: 15m for 1D, 1h for 1W, 6h for 1M. */
 export const TIMEFRAMES = [["15m", 9e5], ["1h", 36e5], ["6h", 216e5]] as const;
 const DAYS = 30; // the longest chart (1M)
-const BATCH = 50; // rounds per request (the client batches JSON-RPC calls)
+const BATCH = 10; // rounds read at once; the client sends them as one small JSON-RPC batch
 
 /**
  * Price history from before the indexer ran: every Chainlink round of the last 30 days, read with getRoundData from
@@ -42,6 +42,7 @@ export async function backfillCandles(stocks: Record<string, { token: Hex; chain
         throw e;
       });
       if (!rounds) break;
+      await new Promise((res) => setTimeout(res, 150)); // gentle on public RPCs
       for (const [, answer, , updatedAt] of rounds) {
         if (answer <= 0n || updatedAt === 0n) continue;
         const p = answer * 10n ** BigInt(18 - dec);

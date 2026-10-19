@@ -3,7 +3,17 @@ import { CHAINS, getDeployment, loadLocalDeployment, type Deployment, type Suppo
 import { env } from "./env";
 
 export const chainId = env.CHAIN_ID as SupportedChainId;
-export const client: PublicClient = createPublicClient({ chain: CHAINS[chainId], transport: http(env.RPC_URL, { batch: true }) }) as PublicClient;
+// Small JSON-RPC batches with retries: public RPCs refuse or rate-limit large bursts (the backfill reads many rounds).
+export const client: PublicClient = createPublicClient({
+  chain: CHAINS[chainId],
+  transport: http(env.RPC_URL, { batch: { batchSize: 10 }, retryCount: 4, retryDelay: 500 }),
+}) as PublicClient;
+
+/** One line for logs: viem's short message and details, not the whole error object. */
+export const brief = (e: unknown) => {
+  const x = e as { shortMessage?: string; details?: string; message?: string };
+  return [x.shortMessage ?? String(x.message ?? e).split("\n")[0], x.details].filter(Boolean).join(" · ");
+};
 
 let cached: Deployment | null = null;
 /** Throws with a clear message if deployments/<chainId>.json still has TODOs. */
