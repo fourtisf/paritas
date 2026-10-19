@@ -69,6 +69,8 @@ p,dd,li{text-wrap:pretty}
 .nav-cta{display:flex;align-items:center;gap:8px}
 .nav-x{padding:0 14px}
 .nav-x svg{width:16px;height:16px}
+.nav-ca{display:inline-flex;align-items:center;gap:9px;height:42px;padding:0 16px 0 7px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(12,12,15,.5);font-size:14px;font-weight:600;color:var(--text-2);white-space:nowrap}
+.nav-ca span{display:inline-grid;place-items:center;height:28px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--text);font-weight:650;font-size:12px;letter-spacing:.04em}
 .menu-btn{display:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-2);background:transparent;cursor:pointer;align-items:center;justify-content:center}
 .menu-btn span{display:block;width:16px;height:1.5px;background:var(--text);position:relative}
 .menu-btn span::before,.menu-btn span::after{content:"";position:absolute;left:0;width:16px;height:1.5px;background:var(--text);transition:transform .2s}
@@ -89,8 +91,6 @@ p,dd,li{text-wrap:pretty}
 .hero h1{max-width:12ch}
 .hero .lede{margin-top:26px}
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
-.ca{display:inline-flex;align-items:center;gap:10px;margin:22px 0 0;height:36px;padding:0 15px 0 6px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(12,12,15,.5);font-size:14px;color:var(--text-2)}
-.ca span{display:inline-grid;place-items:center;height:24px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--text);font-weight:650;font-size:12px;letter-spacing:.04em}
 .live{border-radius:24px;padding:18px;border:1px solid rgba(255,255,255,.09);background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .live-h{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:12px}
 .live-h b{color:var(--text);font-weight:650;font-size:14px}
@@ -378,15 +378,20 @@ p,dd,li{text-wrap:pretty}
   .flow::before{display:none}
   .prom{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media (max-width:900px){
-  :root{--gutter:18px}
-  .nav{top:10px}
-  .nav-links,.nav-cta .btn{display:none}
+/* With X and CA in the nav, the section links move into the menu below 1180px; the buttons stay until 900px. */
+@media (max-width:1180px){
+  .nav-links{display:none}
   .menu-btn{display:inline-flex}
   .mobile-menu{display:block;position:fixed;left:12px;right:12px;top:80px;border-radius:26px;border:1px solid rgba(255,255,255,.1);background:rgba(10,10,12,.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:10px 20px 20px;transform:translateY(-8px);opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s;pointer-events:auto}
   .mobile-menu.open{opacity:1;visibility:visible;transform:none}
   .mobile-menu a:not(.btn){display:block;padding:14px 0;border-bottom:1px solid var(--line);text-decoration:none;font-size:17px;font-weight:600}
   .mobile-menu .btn{width:100%;margin-top:16px}
+  .mobile-menu .mm-ca{display:block;padding:14px 0;border-bottom:1px solid var(--line);font-size:17px;font-weight:600;color:var(--text-2)}
+}
+@media (max-width:900px){
+  :root{--gutter:18px}
+  .nav{top:10px}
+  .nav-cta .btn,.nav-ca{display:none}
   .hero-shade{background:linear-gradient(0deg,rgba(5,5,6,.92) 0%,rgba(5,5,6,.6) 45%,rgba(5,5,6,.1) 75%)}
   .lane{grid-template-columns:110px minmax(0,1fr) 90px;gap:10px}
   .axis{grid-template-columns:110px minmax(0,1fr) 90px;gap:10px}

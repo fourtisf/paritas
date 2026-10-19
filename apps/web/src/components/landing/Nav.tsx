@@ -46,6 +46,7 @@ export function Nav({ logo }: { logo: ReactNode }) {
           </ul>
           <div className="nav-cta">
             <a className="btn btn-g btn-sm nav-x" href={X_URL} target="_blank" rel="noopener noreferrer" aria-label="Paritas on X"><XMark /></a>
+            <span className="nav-ca"><span>CA</span>Coming soon</span>
             <a className="btn btn-g btn-sm" href="#faq">FAQ</a>
             <a className="btn btn-w btn-sm" href="/app/trade">Launch app</a>
             <button className="menu-btn" id="menuBtn" aria-expanded={open} aria-controls="mobileMenu" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen(!open)}><span></span></button>
@@ -56,6 +57,7 @@ export function Nav({ logo }: { logo: ReactNode }) {
         {LINKS.map(([href, label]) => <a key={href} href={href}>{label}</a>)}
         <a href="#faq">FAQ</a>
         <a href={X_URL} target="_blank" rel="noopener noreferrer">X · @useparitas</a>
+        <span className="mm-ca">CA: Coming soon</span>
         <a className="btn btn-w" href="/app/trade">Launch app</a>
       </nav>
     </header>
