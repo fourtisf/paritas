@@ -6,7 +6,8 @@
 // Where each address comes from (official sources only, fetched from this server):
 //   USDG                 Paxos "USDG on Main Networks"
 //   Uniswap v3           Uniswap "Robinhood Chain Deployments"
-//   stock tokens, feeds  docs.robinhood.com/chain, Chainlink's feed directory and its Robinhood tokenized equities page
+//   stock tokens         docs.robinhood.com/chain (Token Contracts) and Robinhood's Stock Token API (/rhj/assets, chain 4663)
+//   feeds                Chainlink's feed directory for Robinhood Chain and its Robinhood tokenized equities page
 // What the chain must confirm before an address is proposed:
 //   USDG          symbol() USDG and decimals() 6
 //   stock token   symbol() is the ticker (NVDA, NVDAx or RHNVDA), decimals(), and Robinhood's oraclePaused() and uiMultiplier()
@@ -20,6 +21,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import {
+  AbiDecodingDataSizeTooSmallError,
+  AbiDecodingZeroDataError,
+  ContractFunctionRevertedError,
+  ContractFunctionZeroDataError,
   concat,
   createPublicClient,
   createWalletClient,
@@ -51,7 +56,9 @@ const src = (name, url) => process.env[`PARITAS_SOURCE_${name}`] ?? url;
 const PAXOS = src("PAXOS", "https://docs.paxos.com/guides/stablecoin/usdg/mainnet");
 const UNISWAP = src("UNISWAP", "https://developers.uniswap.org/docs/protocols/v3/deployments/v3-robinhood-chain-deployments");
 const ROBINHOOD = src("ROBINHOOD", "https://docs.robinhood.com/chain/");
-const ROBINHOOD_PAGES = ["stock-token-apis/", "building-with-stock-tokens/", "oracles-and-price-feeds/", "protocol-contracts/"];
+const ROBINHOOD_PAGES = ["contracts/", "stock-tokens/", "stock-token-apis/", "building-with-stock-tokens/", "oracles-and-price-feeds/", "protocol-contracts/"];
+// documented at docs.robinhood.com/chain/stock-token-apis: each asset lists its deployments (contractAddress, chainId)
+const RH_ASSETS = src("RH_ASSETS", "https://api.robinhood.com/rhj/assets");
 const CHAINLINK_JSON = src("CHAINLINK_JSON", "https://reference-data-directory.vercel.app/feeds-robinhood-mainnet.json");
 const CHAINLINK_PAGE = src("CHAINLINK_PAGE", "https://docs.chain.link/data-feeds/tokenized-equity-feeds/robinhood");
 const SAFE_DEPLOYMENTS = src("SAFE", "https://raw.githubusercontent.com/safe-global/safe-deployments/main/src/assets/v1.4.1/");
@@ -78,16 +85,39 @@ async function fetchText(url) {
 const textOf = (html) => html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ").replace(/\s+/g, " ");
 const addressesIn = (s) => [...new Set((s.match(ADDR) ?? []).map((a) => getAddress(a.toLowerCase())))];
 
-// on-chain reads that return undefined instead of throwing
+// A revert means the contract has no such function. Anything else (timeout, rate limit) is retried, and if the RPC
+// still does not answer, the run stops: a slow RPC must never look like a missing token or feed.
+const isRevert = (e) =>
+  !!e?.walk?.(
+    (x) =>
+      x instanceof ContractFunctionRevertedError ||
+      x instanceof ContractFunctionZeroDataError ||
+      x instanceof AbiDecodingZeroDataError ||
+      x instanceof AbiDecodingDataSizeTooSmallError ||
+      x?.code === 3 ||
+      /revert|invalid opcode/i.test(`${x?.details ?? ""} ${x?.shortMessage ?? ""}`),
+  );
+async function retrying(call, what) {
+  for (let i = 0; ; i++) {
+    try {
+      return await call();
+    } catch (e) {
+      if (isRevert(e)) throw e;
+      if (i === 5) fail(`\nThe Robinhood Chain RPC did not answer (${what}: ${e.shortMessage ?? e.message}). Run the same command again in a few minutes.`);
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** i));
+    }
+  }
+}
+// on-chain reads that return undefined when the function does not exist
 async function read(address, sig, args = []) {
   const name = sig.match(/function (\w+)/)[1];
   try {
-    return await client.readContract({ address, abi: parseAbi([sig]), functionName: name, args });
+    return await retrying(() => client.readContract({ address, abi: parseAbi([sig]), functionName: name, args }), `${name}() at ${address}`);
   } catch {
     return undefined;
   }
 }
-const hasCode = async (a) => ((await client.getCode({ address: a }).catch(() => undefined)) ?? "0x") !== "0x";
+const hasCode = async (a) => ((await retrying(() => client.getCode({ address: a }), `code at ${a}`)) ?? "0x") !== "0x";
 
 // ------------------------------------------------------------------ sources
 say("Opening the official pages from this server:");
@@ -110,7 +140,27 @@ let clFeeds = [];
 try {
   clFeeds = JSON.parse(clJsonText);
 } catch {}
-say(`  found ${addressesIn(paxosHtml).length} addresses at Paxos, ${addressesIn(uniHtml).length} at Uniswap, ${addressesIn(rhHtml).length} in the Robinhood docs, ${clFeeds.length} Chainlink directory entries`);
+// Robinhood's token list: every contractAddress listed for chain 4663, with the asset's symbol when the API gives one
+const rhAssets = new Map();
+const collect = (v, sym) => {
+  if (Array.isArray(v)) return v.forEach((x) => collect(x, sym));
+  if (!v || typeof v !== "object") return;
+  const s = typeof v.symbol === "string" ? v.symbol : typeof v.ticker === "string" ? v.ticker : sym;
+  const a = v.contractAddress ?? v.contract_address;
+  if (typeof a === "string" && isAddress(a) && Number(v.chainId ?? v.chain_id) === 4663) rhAssets.set(getAddress(a.toLowerCase()), s);
+  for (const x of Object.values(v)) if (x && typeof x === "object") collect(x, s);
+};
+for (let url = RH_ASSETS, n = 0; url && n < 30; n++) {
+  let j;
+  try {
+    j = JSON.parse(await fetchText(url));
+  } catch {
+    break;
+  }
+  collect(j);
+  url = typeof j?.next === "string" ? new URL(j.next, url).href : undefined;
+}
+say(`  found ${addressesIn(paxosHtml).length} addresses at Paxos, ${addressesIn(uniHtml).length} at Uniswap, ${addressesIn(rhHtml).length} in the Robinhood docs, ${rhAssets.size} in Robinhood's token API for chain 4663, ${clFeeds.length} Chainlink directory entries`);
 
 // ------------------------------------------------------------------ USDG
 const found = {};
@@ -141,7 +191,10 @@ if (quoter && found.factory && (await factoryOf(quoter)) === found.factory && (a
 else problems.push(`Uniswap QuoterV2: ${quoter ? `${quoter} does not report the v3 factory` : "not found on the Uniswap page"}`);
 
 // ------------------------------------------------------------------ stock tokens and feeds
-const pool = [...new Set([...addressesIn(rhHtml), ...addressesIn(clPage), ...clFeeds.flatMap((f) => [f.proxyAddress, f.contractAddress].filter((x) => x && isAddress(x)).map((x) => getAddress(x.toLowerCase())))])];
+const tickers = cfg.markets.map((m) => m.symbol.toUpperCase().replace(/X$/, ""));
+const NAMES = (t) => [t, `${t}X`, `RH${t}`, `RH${t}X`, `ROBINHOOD ${t}`, `ROBINHOOD ${t}X`];
+const ours = [...rhAssets].filter(([, s]) => s === undefined || tickers.some((t) => NAMES(t).includes(s.trim().toUpperCase()))).map(([a]) => a);
+const pool = [...new Set([...addressesIn(rhHtml), ...(ours.length ? ours : [...rhAssets.keys()]), ...addressesIn(clPage), ...clFeeds.flatMap((f) => [f.proxyAddress, f.contractAddress].filter((x) => x && isAddress(x)).map((x) => getAddress(x.toLowerCase())))])];
 const tokens = [];
 const feeds = [];
 const otherTokens = []; // ERC-20s without Robinhood's oraclePaused()/uiMultiplier()
@@ -168,13 +221,13 @@ async function classify(a) {
   }
 }
 process.stdout.write(`  checking ${pool.length} addresses on-chain`);
-for (let i = 0; i < pool.length; i += 12) {
-  await Promise.all(pool.slice(i, i + 12).map(classify));
+for (let i = 0; i < pool.length; i += 8) {
+  await Promise.all(pool.slice(i, i + 8).map(classify));
   process.stdout.write(".");
 }
 say(" done");
 if (LIST) {
-  say(`Robinhood docs pages read: ${rhPages.length}`);
+  say(`Robinhood docs pages read: ${rhPages.length}; Robinhood token API, chain 4663: ${[...rhAssets].map(([a, s]) => s ?? a).join(" ") || "none"}`);
   say(`Stock tokens (oraclePaused and uiMultiplier): ${tokens.map((x) => x.sym).join(" ") || "none"}`);
   say(`Other tokens [P = has oraclePaused, M = has uiMultiplier]: ${otherTokens.map((x) => `${x.sym}${x.paused ? "P" : ""}${x.mult ? "M" : ""}/${x.dec}`).join(" ") || "none"}`);
   say(`Feeds on chain (description): ${feeds.map((x) => x.desc).join(" | ") || "none"}`);
@@ -183,7 +236,7 @@ if (LIST) {
 }
 const tickerOf = (s) => s.toUpperCase().replace(/X$/, "");
 // The names Robinhood and Chainlink use for a ticker: NVDA, NVDAx, RHNVDA, "Robinhood NVDA"
-const namesTicker = (t, s) => s !== undefined && [t, `${t}X`, `RH${t}`, `RH${t}X`, `ROBINHOOD ${t}`, `ROBINHOOD ${t}X`].includes(s.trim().toUpperCase());
+const namesTicker = (t, s) => s !== undefined && NAMES(t).includes(s.trim().toUpperCase());
 const baseOf = (desc) => desc?.match(/^\s*(.+?)\s*(?:\/|-)\s*USD\s*$/i)?.[1]; // "RHNVDA / USD", "Robinhood SGOV-USD"
 const lower = (a) => a?.toLowerCase();
 const dirByProxy = new Map(clFeeds.filter((f) => f.proxyAddress).map((f) => [lower(f.proxyAddress), f]));
@@ -206,6 +259,8 @@ for (const m of cfg.markets) {
   let fdPick = narrow(fd, (x) => dirByProxy.has(lower(x.a)));
   if (tk.length === 1) fdPick = narrow(fdPick, (x) => baseOf(x.desc).trim() === tk[0].sym);
   // two candidates is a real ambiguity and stops everything; none means the market is not live on the chain yet
+  const apiSym = tk.length === 1 ? rhAssets.get(tk[0].a) : undefined;
+  if (apiSym !== undefined && !namesTicker(t, apiSym)) problems.push(`${m.symbol} token: ${tk[0].a} answers as ${tk[0].sym}, but Robinhood's token API lists it as ${apiSym}`);
   if (tk.length > 1) problems.push(`${m.symbol} token: ${tk.length} Robinhood stock tokens answer as ${t}: ${tk.map((x) => `${x.a} (${x.sym})`).join(", ")}`);
   if (fdPick.length > 1) problems.push(`${m.symbol} feed: ${fdPick.length} feeds for ${t} / USD: ${fdPick.map((x) => `${x.a} (${x.desc})`).join(", ")}`);
   if (tk.length === 0 || fdPick.length === 0) {
@@ -276,12 +331,14 @@ if (missingMarkets.length) {
   say();
   say("Not on Robinhood Chain's official pages yet, so not deployed now:");
   for (const x of missingMarkets) say(`  - ${x}`);
+  const syms = tokens.map((x) => x.sym);
+  say(`  (stock tokens found on chain: ${syms.slice(0, 40).join(" ") || "none"}${syms.length > 40 ? ` and ${syms.length - 40} more` : ""})`);
   const a = await ask(`Launch with the other ${Object.keys(markets).length} markets and add these later through the timelock? Type YES: `);
-  if (a !== "YES") fail("Stopped.");
+  if (a.toUpperCase() !== "YES") fail("Stopped.");
 }
 if (!sequencer) {
   const a = await ask("No Chainlink sequencer uptime feed was found for Robinhood Chain. Deploy without one (DECISIONS #10)? Type YES: ");
-  if (a !== "YES") fail("Stopped.");
+  if (a.toUpperCase() !== "YES") fail("Stopped.");
   sequencer = "0x0000000000000000000000000000000000000000";
 }
 // Safe's official contract for chain 4663, accepted only when the code on chain has the published code hash
@@ -363,7 +420,7 @@ for (const x of Object.values(markets)) say(`  ${EXPLORER}${x.token.a}   ${EXPLO
 say(`  ${EXPLORER}${safe}`);
 const yes = await ask("Type YES to write these addresses into deployments/4663.json: ");
 rl.close();
-if (yes !== "YES") {
+if (yes.toUpperCase() !== "YES") {
   say("Nothing was written.");
   process.exit(1);
 }

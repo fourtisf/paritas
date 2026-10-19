@@ -83,8 +83,9 @@ sudo -iu paritas bash /home/paritas/paritas/deploy/mainnet.sh
    creates a password-protected keystore. It then asks for twice the deployment's gas at today's price (57 transactions,
    about 30M gas: roughly 0.0003 to 0.003 ETH at 0.01 to 0.1 gwei). What is not spent stays in the wallet.
 3. Looks up every address still `TODO` in `deployments/4663.json` (`deploy/find-addresses.mjs`), from the official pages
-   only: Paxos (USDG), Uniswap's Robinhood Chain deployments, docs.robinhood.com/chain (stock tokens) and Chainlink's feed
-   directory. It proposes an address only when the chain confirms it (symbol and decimals, Robinhood's stock-token
+   only: Paxos (USDG), Uniswap's Robinhood Chain deployments, docs.robinhood.com/chain and Robinhood's Stock Token API
+   (`/rhj/assets`, chain 4663) for stock tokens, and Chainlink's feed directory. If the RPC does not answer, it stops
+   and asks you to run it again; it never takes a timeout for a missing token. It proposes an address only when the chain confirms it (symbol and decimals, Robinhood's stock-token
    functions, a feed proxy whose description and Chainlink directory name both name the ticker, such as
    `RHNVDA / USD` and `Robinhood NVDA / USD`, Uniswap's factory links). It asks for your Safe (checked against `governance` in config);
    Enter creates a 1-of-1 Safe owned by the deployer wallet, from Safe's official v1.4.1 contracts (code hashes

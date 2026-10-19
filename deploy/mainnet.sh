@@ -176,7 +176,7 @@ else
   echo
   echo "Compare every line printed above with Blockscout and with docs/MAINNET_ADDRESSES.md."
   read -r -p "Type DEPLOY to deploy Paritas to Robinhood Chain mainnet: " ANSWER || ANSWER=""
-  if [ "$ANSWER" != DEPLOY ]; then
+  if [ "${ANSWER^^}" != DEPLOY ]; then
     mv "$DEP.before" "$DEP"
     echo "Nothing was deployed."
     exit 0
