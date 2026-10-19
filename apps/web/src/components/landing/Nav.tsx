@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
+import { X_URL } from "@/lib/links";
 
 const LINKS = [
   ["#quote", "Quote"],
@@ -9,6 +10,11 @@ const LINKS = [
   ["#app-preview", "App"],
   ["#vaults", "Vaults"],
 ] as const;
+
+/** The X logo (Simple Icons, CC0). */
+const XMark = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" /></svg>
+);
 
 /** Floating nav: highlights the section in view and opens the mobile menu. */
 export function Nav({ logo }: { logo: ReactNode }) {
@@ -39,6 +45,7 @@ export function Nav({ logo }: { logo: ReactNode }) {
             ))}
           </ul>
           <div className="nav-cta">
+            <a className="btn btn-g btn-sm nav-x" href={X_URL} target="_blank" rel="noopener noreferrer" aria-label="Paritas on X"><XMark /></a>
             <a className="btn btn-g btn-sm" href="#faq">FAQ</a>
             <a className="btn btn-w btn-sm" href="/app/trade">Launch app</a>
             <button className="menu-btn" id="menuBtn" aria-expanded={open} aria-controls="mobileMenu" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen(!open)}><span></span></button>
@@ -48,6 +55,7 @@ export function Nav({ logo }: { logo: ReactNode }) {
       <nav className={"mobile-menu" + (open ? " open" : "")} id="mobileMenu" aria-label="Mobile" onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setOpen(false); }}>
         {LINKS.map(([href, label]) => <a key={href} href={href}>{label}</a>)}
         <a href="#faq">FAQ</a>
+        <a href={X_URL} target="_blank" rel="noopener noreferrer">X · @useparitas</a>
         <a className="btn btn-w" href="/app/trade">Launch app</a>
       </nav>
     </header>
