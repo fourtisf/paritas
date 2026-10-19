@@ -1,4 +1,4 @@
-import { parseAbi, type Hex } from "viem";
+import { ContractFunctionRevertedError, ContractFunctionZeroDataError, parseAbi, type BaseError, type Hex } from "viem";
 import { chainNow, client } from "./chain";
 import { db } from "./db";
 
@@ -36,7 +36,12 @@ export async function backfillCandles(stocks: Record<string, { token: Hex; chain
     for (let r = latest & 0xffff_ffff_ffff_ffffn; r > 0n && before === undefined; ) {
       const ids = Array.from({ length: r < BigInt(BATCH) ? Number(r) : BATCH }, (_, i) => (phase << 64n) | (r - BigInt(i)));
       r -= BigInt(ids.length);
-      const rounds = await Promise.all(ids.map((id) => client.readContract({ ...feed, functionName: "getRoundData", args: [id] })));
+      const rounds = await Promise.all(ids.map((id) => client.readContract({ ...feed, functionName: "getRoundData", args: [id] }))).catch((e: BaseError) => {
+        // a feed without getRoundData (a local mock) has no history; anything else (RPC down) is retried at the next start
+        if (e.walk?.((x) => x instanceof ContractFunctionRevertedError || x instanceof ContractFunctionZeroDataError)) return null;
+        throw e;
+      });
+      if (!rounds) break;
       for (const [, answer, , updatedAt] of rounds) {
         if (answer <= 0n || updatedAt === 0n) continue;
         const p = answer * 10n ** BigInt(18 - dec);

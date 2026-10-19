@@ -138,6 +138,14 @@ async function sampleCandles(stocks: Record<string, { token: Hex; chainlinkFeed:
   }
 }
 
+/** Its own loop, so a slow or failing log scan (catching up, RPC errors) never stops the price chart. */
+async function sampleForever(stocks: Record<string, { token: Hex; chainlinkFeed: Hex }>) {
+  for (;;) {
+    await sampleCandles(stocks).catch((e) => console.error("candle error", e));
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+}
+
 async function loop() {
   let d;
   for (;;) {
@@ -150,6 +158,8 @@ async function loop() {
   }
   const start = BigInt(d.paritas.deployedAtBlock || 0);
   backfillCandles(d.stocks).catch((e) => console.error("backfill error (retried at the next start)", e));
+  sampleForever(d.stocks);
+  let logged = 0;
   for (;;) {
     try {
       const head = (await client.getBlockNumber()) - BigInt(env.INDEXER_CONFIRMATIONS);
@@ -161,9 +171,14 @@ async function loop() {
         await indexVaults(from, to, d.paritas.vaults);
         await indexTimelock(from, to, d.paritas.timelock);
         await save("main", to);
-        if (to < head) continue; // catching up: no sleep
+        if (to < head) {
+          if (Date.now() - logged > 30_000) {
+            console.log(`indexer catching up: block ${to} of ${head}`);
+            logged = Date.now();
+          }
+          continue; // no sleep
+        }
       }
-      await sampleCandles(d.stocks);
     } catch (e) {
       console.error("indexer error", e);
     }
