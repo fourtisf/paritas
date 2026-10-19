@@ -13,9 +13,27 @@
 //   feed          description() "<ticker> / USD", decimals(), and a positive latestRoundData() answer
 //   Uniswap       the factory answers feeAmountTickSpacing(500) = 10; SwapRouter02 and QuoterV2 report that factory
 //   Safe          getThreshold() and getOwners() match config/protocol.json (governance.multisig*)
+// With Enter at the Safe question it creates a 1-of-1 Safe owned by the deployer wallet (DEPLOYER_PRIVATE_KEY), from
+// Safe's official deployment list for chain 4663 (safe-global/safe-deployments v1.4.1): it uses an address only when
+// the code there has the code hash that list publishes.
 import { readFileSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
-import { createPublicClient, getAddress, http, isAddress, parseAbi } from "viem";
+import {
+  concat,
+  createPublicClient,
+  createWalletClient,
+  encodeFunctionData,
+  encodePacked,
+  getAddress,
+  getContractAddress,
+  http,
+  isAddress,
+  keccak256,
+  pad,
+  parseAbi,
+  toHex,
+} from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 const [file, rpc, deployerArg, attesterArg] = process.argv.slice(2);
 const deployer = getAddress(deployerArg);
@@ -34,6 +52,8 @@ const ROBINHOOD = src("ROBINHOOD", "https://docs.robinhood.com/chain/");
 const ROBINHOOD_PAGES = ["stock-token-apis/", "building-with-stock-tokens/", "oracles-and-price-feeds/", "protocol-contracts/"];
 const CHAINLINK_JSON = src("CHAINLINK_JSON", "https://reference-data-directory.vercel.app/feeds-robinhood-mainnet.json");
 const CHAINLINK_PAGE = src("CHAINLINK_PAGE", "https://docs.chain.link/data-feeds/tokenized-equity-feeds/robinhood");
+const SAFE_DEPLOYMENTS = src("SAFE", "https://raw.githubusercontent.com/safe-global/safe-deployments/main/src/assets/v1.4.1/");
+const ZERO = "0x0000000000000000000000000000000000000000";
 
 const ADDR = /0x[0-9a-fA-F]{40}/g;
 const say = (s = "") => console.log(s);
@@ -207,10 +227,63 @@ if (!sequencer) {
   if (a !== "YES") fail("Stopped.");
   sequencer = "0x0000000000000000000000000000000000000000";
 }
+// Safe's official contract for chain 4663, accepted only when the code on chain has the published code hash
+async function officialSafe(name) {
+  let j;
+  try {
+    j = JSON.parse(await fetchText(`${SAFE_DEPLOYMENTS}${name}.json`));
+  } catch {
+    fail(`Could not read Safe's deployment list (${name}).`);
+  }
+  const v = j.networkAddresses?.["4663"];
+  for (const t of Array.isArray(v) ? v : [v]) {
+    const d = typeof t === "string" && isAddress(t) ? { address: t } : j.deployments?.[t];
+    if (!d?.address) continue;
+    const code = await client.getCode({ address: d.address }).catch(() => undefined);
+    if (code && code !== "0x" && (!d.codeHash || keccak256(code) === d.codeHash)) return getAddress(d.address);
+  }
+  fail(`Safe's ${j.contractName ?? name} ${j.version ?? ""} is not deployed on Robinhood Chain as its official list says.`);
+}
+
+async function createSafe() {
+  const key = process.env.DEPLOYER_PRIVATE_KEY;
+  if (!key) fail("To create the Safe here, the deployer must be a pasted private key (deploy/deployer.env).");
+  if (g.multisigThreshold !== 1 || g.multisigSigners !== 1) fail(`config/protocol.json asks for a ${g.multisigThreshold}-of-${g.multisigSigners} Safe; create it at app.safe.global.`);
+  const factoryAddr = await officialSafe("safe_proxy_factory");
+  const singleton = await officialSafe("safe_l2");
+  const fallback = await officialSafe("compatibility_fallback_handler");
+  const setupAbi = parseAbi(["function setup(address[] _owners, uint256 _threshold, address to, bytes data, address fallbackHandler, address paymentToken, uint256 payment, address paymentReceiver)"]);
+  const initializer = encodeFunctionData({ abi: setupAbi, functionName: "setup", args: [[deployer], 1n, ZERO, "0x", fallback, ZERO, 0n, ZERO] });
+  const saltNonce = BigInt(keccak256(toHex("paritas-mainnet-safe")));
+  // the address CREATE2 gives this Safe, so running again finds the one already created
+  const proxyCode = await read(factoryAddr, "function proxyCreationCode() pure returns (bytes)");
+  const predicted = getContractAddress({
+    opcode: "CREATE2",
+    from: factoryAddr,
+    salt: keccak256(encodePacked(["bytes32", "uint256"], [keccak256(initializer), saltNonce])),
+    bytecode: concat([proxyCode, pad(singleton)]),
+  });
+  if (!(await hasCode(predicted))) {
+    say(`  creating a 1-of-1 Safe owned by ${deployer} (Safe v1.4.1, factory ${factoryAddr})`);
+    const account = privateKeyToAccount(key);
+    const wallet = createWalletClient({ account, transport: http(rpc) });
+    const hash = await wallet.writeContract({
+      chain: null,
+      address: factoryAddr,
+      abi: parseAbi(["function createProxyWithNonce(address _singleton, bytes initializer, uint256 saltNonce) returns (address proxy)"]),
+      functionName: "createProxyWithNonce",
+      args: [singleton, initializer, saltNonce],
+    });
+    const rc = await client.waitForTransactionReceipt({ hash });
+    if (rc.status !== "success") fail(`Creating the Safe failed (transaction ${hash}).`);
+  }
+  return predicted;
+}
+
 const g = cfg.governance;
-const safeIn = await ask(`Address of your Safe on Robinhood Chain (${g.multisigThreshold}-of-${g.multisigSigners}): `);
-if (!isAddress(safeIn)) fail("That is not an address.");
-const safe = getAddress(safeIn);
+const safeIn = await ask(`Address of your Safe on Robinhood Chain (${g.multisigThreshold}-of-${g.multisigSigners}), or Enter to create a 1-of-1 Safe owned by ${deployer}: `);
+if (safeIn && !isAddress(safeIn)) fail("That is not an address.");
+const safe = safeIn ? getAddress(safeIn) : await createSafe();
 const threshold = await read(safe, "function getThreshold() view returns (uint256)");
 const owners = await read(safe, "function getOwners() view returns (address[])");
 if (threshold === undefined || owners === undefined) fail(`${safe} is not a Safe on Robinhood Chain.`);
@@ -218,9 +291,9 @@ if (Number(threshold) !== g.multisigThreshold || owners.length !== g.multisigSig
   fail(`The Safe is ${threshold}-of-${owners.length}; config/protocol.json asks for ${g.multisigThreshold}-of-${g.multisigSigners}.`);
 }
 say(`  Safe ${safe}: ${threshold}-of-${owners.length}, owners ${owners.join(", ")}`);
-const guardianIn = await ask("Guardian address (a wallet that may only pause; not the deployer): ");
-if (!isAddress(guardianIn)) fail("That is not an address.");
-const guardian = getAddress(guardianIn);
+const guardianIn = await ask(`Guardian address, the one that may pause (Enter for the Safe ${safe}): `);
+if (guardianIn && !isAddress(guardianIn)) fail("That is not an address.");
+const guardian = guardianIn ? getAddress(guardianIn) : safe;
 if (guardian === deployer) fail("The guardian must not be the deployer wallet.");
 const treasuryIn = await ask(`Treasury address for fees (Enter for the Safe ${safe}): `);
 const treasury = treasuryIn ? getAddress(treasuryIn) : safe;

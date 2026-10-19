@@ -155,7 +155,7 @@ else
   ' "$ROOT/$DEP")
   if [ -n "$MISSING" ]; then
     echo "Looking the addresses up on the official pages, and checking each one on-chain:"
-    if ! node deploy/find-addresses.mjs "$ROOT/$DEP" "$ROBINHOOD_RPC_URL" "$DEPLOYER" "$ATTESTER"; then
+    if ! DEPLOYER_PRIVATE_KEY="${DEPLOYER_KEY:-}" node deploy/find-addresses.mjs "$ROOT/$DEP" "$ROBINHOOD_RPC_URL" "$DEPLOYER" "$ATTESTER"; then
       echo
       echo "Still to fill (docs/MAINNET_ADDRESSES.md):"
       echo "$MISSING" | sed 's/^/  /'
@@ -208,6 +208,8 @@ echo
 echo "Paritas is live on Robinhood Chain mainnet: https://paritas.live/app/trade"
 echo "Deployed addresses: $ROOT/$DEP (a copy is in $HOME/4663.deployed.json). Send this file to be committed."
 echo "Next: check on Blockscout that every owner is the timelock, then seed the vaults (docs/MAINNET.md)."
+# The deployer wallet may own the Safe, so its key must not stay on this server once Paritas is deployed.
 if [ -f "$DEPLOYER_ENV" ]; then
-  echo "The deployer has no role after deployment. Delete its key from this server: rm $ROOT/$DEPLOYER_ENV"
+  rm -f "$DEPLOYER_ENV"
+  echo "The deployer's private key was deleted from this server. Keep it in your own wallet: it controls the Safe."
 fi
