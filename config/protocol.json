@@ -15,7 +15,7 @@
     "overnight": { "index": 2, "spreadMulBps": 20000, "clipMulBps": 5000,  "bandMulBps": 10000, "vaultOpen": true },
     "closed":    { "index": 3, "spreadMulBps": 0,     "clipMulBps": 0,     "bandMulBps": 20000, "vaultOpen": false }
   },
-  "governance": { "timelockDelaySec": 172800, "multisigThreshold": 3, "multisigSigners": 5 },
+  "governance": { "timelockDelaySec": 172800, "multisigThreshold": 1, "multisigSigners": 1 },
   "eligibility": { "enforcedOnMainnet": true, "attestationTtlDays": 90, "blockedCountries": ["US", "PR", "GU", "VI", "AS", "MP", "UM"] },
   "markets": [
     { "symbol": "NVDAx", "name": "NVIDIA",           "tier": "A", "uniswapPoolFee": 500,  "wave": 1 },

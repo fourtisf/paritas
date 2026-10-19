@@ -20,7 +20,7 @@ import {UniswapV3Adapter} from "../src/adapters/UniswapV3Adapter.sol";
 /// Parameters come from config/protocol.json, holidays from config/holidays.json.
 abstract contract DeployCore is CommonBase {
     struct Roles {
-        address multisig; // timelock proposer + executor (Safe 3-of-5 on mainnet)
+        address multisig; // timelock proposer + executor (a Safe on mainnet, threshold and owners as in config)
         address guardian; // pause-only
         address attester; // eligibility attestation signer (KYC provider key)
         address rfqMaker; // optional first allowlisted maker; zero = none (add later via timelock)

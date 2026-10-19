@@ -19,7 +19,7 @@ Rules (`docs/VERIFY_ON_CHAIN.md`):
 | Stock token | Also `oraclePaused()` and `uiMultiplier()`. If `uiMultiplier` is not 1e18, decide `useUiMultiplier` with Michael. |
 | Chainlink feed | `description()` names the right stock. Note `decimals()`, the heartbeat and the deviation threshold (DECISIONS #9). `latestRoundData()` is recent during market hours. |
 | Uniswap | From Uniswap's official deployments page for this chain. A USDG/stock pool exists at the fee tier in `config/protocol.json`. |
-| Safe and keys | The Safe is a contract with the agreed 3-of-5 signers (DECISIONS #6). Keys come from their owners, never from a chat. |
+| Safe and keys | The Safe is a contract with the signers in `config/protocol.json` (1-of-1 at launch, DECISIONS #6). Keys come from their owners, never from a chat. |
 
 ## Shared contracts
 
@@ -62,7 +62,7 @@ Robinhood Chain.
 
 | # | Key | Must be | Decided in | Address | Checker 1 | Checker 2 |
 |---|---|---|---|---|---|---|
-| 22 | `roles.multisig` | The 3-of-5 Safe. It becomes the timelock proposer and executor. `Deploy.s.sol` refuses an address without code. | DECISIONS #6 | | | |
+| 22 | `roles.multisig` | The Safe, with the threshold and owners in `config/protocol.json` (1-of-1 at launch). It becomes the timelock proposer and executor. `Deploy.s.sol` checks it. | DECISIONS #6 | | | |
 | 23 | `roles.guardian` | Pause-only key or Safe, separate from the multisig | DECISIONS #6 | | | |
 | 24 | `roles.attester` | The KYC provider's signing key, held in an HSM or KMS | DECISIONS #2 | | | |
 | 25 | `roles.treasury` | Where the timelock sweeps fees | DECISIONS #13 | | | |

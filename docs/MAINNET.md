@@ -85,7 +85,7 @@ sudo -iu paritas bash /home/paritas/paritas/deploy/mainnet.sh
 3. Looks up every address still `TODO` in `deployments/4663.json` (`deploy/find-addresses.mjs`), from the official pages
    only: Paxos (USDG), Uniswap's Robinhood Chain deployments, docs.robinhood.com/chain (stock tokens) and Chainlink's feed
    directory. It proposes an address only when the chain confirms it (symbol and decimals, Robinhood's stock-token
-   functions, the feed's own description, Uniswap's factory links). It asks for your Safe (checked 3-of-5), guardian
+   functions, the feed's own description, Uniswap's factory links). It asks for your Safe (checked against `governance` in config), guardian
    and treasury, and writes nothing until you type `YES`.
 4. Dry run: prints what it read from every contract. It deploys only after you type `DEPLOY`.
 5. Checks that every Paritas contract has code, then restarts the API, the indexer and the web app.

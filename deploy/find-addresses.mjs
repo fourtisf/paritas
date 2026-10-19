@@ -12,7 +12,7 @@
 //   stock token   symbol() is the ticker (NVDA or NVDAx), decimals(), and Robinhood's oraclePaused() and uiMultiplier()
 //   feed          description() "<ticker> / USD", decimals(), and a positive latestRoundData() answer
 //   Uniswap       the factory answers feeAmountTickSpacing(500) = 10; SwapRouter02 and QuoterV2 report that factory
-//   Safe          getThreshold() and getOwners() match config/protocol.json (3 of 5)
+//   Safe          getThreshold() and getOwners() match config/protocol.json (governance.multisig*)
 import { readFileSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { createPublicClient, getAddress, http, isAddress, parseAbi } from "viem";

@@ -101,7 +101,7 @@ Test: `test_FeedDecimalsAreReadLive`.
 ### F-8 Mainnet deploy checks (fixed)
 
 On chain 4663, `Deploy.s.sol` now requires:
-- the Safe's threshold and owner count to match `config/protocol.json` (3 of 5)
+- the Safe's threshold and owner count to match `config/protocol.json` (1 of 1 at launch, DECISIONS #6)
 - a timelock delay of at least 48h
 - the multisig, the guardian and the attester to differ from the deployer
 

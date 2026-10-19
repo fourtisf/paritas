@@ -64,7 +64,7 @@ OpenZeppelin `TimelockController` (48h delay) is deployed unmodified. The way Pa
 
 | Role | Who | Can |
 |---|---|---|
-| Timelock (48h) | OpenZeppelin `TimelockController`. The proposer and executor is a 3-of-5 Safe. | Own every contract: change parameters inside the hard bounds, list markets, add or remove makers, set holidays, unpause, sweep fees. |
+| Timelock (48h) | OpenZeppelin `TimelockController`. The proposer and executor is a Safe (1-of-1 at launch; more owners later, DECISIONS #6). | Own every contract: change parameters inside the hard bounds, list markets, add or remove makers, set holidays, unpause, sweep fees. |
 | Guardian | A separate key or Safe | Pause only. Cannot unpause or move funds. |
 | Attester | KYC provider key (HSM or KMS) | Sign eligibility attestations with an expiry. |
 | Makers | Allowlisted addresses | Sign RFQ quotes. |
