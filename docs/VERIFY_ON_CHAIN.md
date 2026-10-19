@@ -16,7 +16,11 @@ listed below, keeps only the addresses the chain confirms, and prints a Blocksco
    - The name matches.
    - For tokens: `symbol()` and `decimals()` match. USDG is expected to have 6 decimals; stock tokens 18 (record whatever is true).
    - For feeds: `description()` names the right stock, `decimals()` is noted, and `latestRoundData()` is recent during market hours. Note the heartbeat and deviation in the JSON (`feedHeartbeatSec`).
-   - For stock tokens: call `oraclePaused()` and `uiMultiplier()` and write down what they return. If `uiMultiplier` is not 1e18 for any token, read Robinhood's docs and decide `useUiMultiplier` with Michael.
+   - For stock tokens: call `oraclePaused()` and `uiMultiplier()` and write down what they return. `uiMultiplier` above
+     1e18 is normal after dividends or splits. Chainlink's Robinhood feeds already report the token's price (share
+     price × `uiMultiplier`), so `useUiMultiplier` stays `false`. Sources: Chainlink, "Robinhood Tokenized Equities"
+     (docs.chain.link/data-feeds/tokenized-equity-feeds/robinhood), and Robinhood, "Building with Stock Tokens"
+     (docs.robinhood.com/chain/building-with-stock-tokens).
    - For Uniswap: the SwapRouter02 and QuoterV2 addresses come from the same official list, and a USDG/stock pool exists at the fee tier in `config/protocol.json`.
 4. Paste the address and commit with a message naming who checked it.
 5. Run the dry run: `forge script script/Deploy.s.sol --rpc-url robinhood --sender <deployer>`. It prints what it read from each contract. Compare every line with step 3 before adding `--broadcast`.

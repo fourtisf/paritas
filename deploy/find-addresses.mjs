@@ -154,7 +154,7 @@ async function classify(a) {
       read(a, "function uiMultiplier() view returns (uint256)"),
       read(a, "function decimals() view returns (uint8)"),
     ]);
-    if (paused !== undefined && mult !== undefined) tokens.push({ a, sym, mult, dec: Number(dec) });
+    if (paused !== undefined && mult !== undefined) tokens.push({ a, sym, mult, paused, dec: Number(dec) });
     else otherTokens.push({ a, sym, dec: Number(dec), paused: paused !== undefined, mult: mult !== undefined });
     return;
   }
@@ -226,6 +226,8 @@ let sequencer = seq.length === 1 ? seq[0].a : seqMeta.length === 1 ? getAddress(
 say();
 say("Checked on-chain:");
 const row = (k, a, note = "") => say(`  ${k.padEnd(26)} ${a ?? "-".padEnd(42)}  ${note}`);
+const note = (s) => say(`  ${"".padEnd(26)} note: ${s}`);
+const wad = (v) => { const d = v.toString().padStart(19, "0"); return `${d.slice(0, -18)}.${d.slice(-18)}`.replace(/\.?0+$/, ""); };
 row("USDG", found.usdg, found.usdg ? "symbol USDG, 6 decimals" : "");
 row("Uniswap V3 Factory", found.factory, found.factory ? "fee 500 -> tick spacing 10" : "");
 row("Uniswap SwapRouter02", found.router02, found.router02 ? "factory() matches" : "");
@@ -237,12 +239,16 @@ for (const m of cfg.markets) {
     continue;
   }
   const age = x.feed.updatedAt ? `${(Number(now - x.feed.updatedAt) / 3600).toFixed(1)}h old` : "";
-  row(`${m.symbol} token`, x.token.a, `${x.token.sym}, ${x.token.dec} decimals, uiMultiplier ${x.token.mult}`);
+  row(`${m.symbol} token`, x.token.a, `${x.token.sym}, ${x.token.dec} decimals, uiMultiplier ${wad(x.token.mult)}`);
   row(`${m.symbol} feed`, x.feed.a, `"${x.feed.desc}", ${x.feed.dec} decimals, ${Number(x.feed.answer) / 10 ** x.feed.dec} USD, ${age}`);
-  if (x.token.mult !== 10n ** 18n) problems.push(`${m.symbol}: uiMultiplier is ${x.token.mult}, not 1e18. Decide useUiMultiplier with Michael before deploying (docs/VERIFY_ON_CHAIN.md).`);
+  // Robinhood raises uiMultiplier for dividends and splits, and Chainlink's feed is already the token's price
+  // (share price x uiMultiplier), so useUiMultiplier stays false (docs/VERIFY_ON_CHAIN.md).
+  if (x.token.mult === 0n) problems.push(`${m.symbol}: uiMultiplier is 0.`);
+  else if (x.token.mult !== 10n ** 18n) note(`uiMultiplier ${wad(x.token.mult)} (dividends): the feed already includes it`);
+  if (x.token.paused) note("Robinhood has paused this token's price (oraclePaused); its vault waits until it is unpaused");
   if (found.factory && found.usdg) {
     const p = await read(found.factory, "function getPool(address,address,uint24) view returns (address)", [found.usdg, x.token.a, m.uniswapPoolFee]);
-    if (!p || /^0x0{40}$/i.test(p)) say(`  ${"".padEnd(26)} note: no Uniswap USDG/${m.symbol} pool at fee ${m.uniswapPoolFee}; that market routes through the vault and makers only`);
+    if (!p || /^0x0{40}$/i.test(p)) note(`no Uniswap USDG/${m.symbol} pool at fee ${m.uniswapPoolFee}; that market routes through the vault and makers only`);
   }
 }
 row("Sequencer uptime feed", sequencer, sequencer ? "Chainlink L2 sequencer feed" : "");
@@ -374,6 +380,8 @@ for (const m of cfg.markets) {
   const s = dep.external.stocks[m.symbol];
   s.token = markets[m.symbol].token.a;
   s.chainlinkFeed = markets[m.symbol].feed.a;
+  s.useUiMultiplier = false; // the feed already includes uiMultiplier
+  s.checkOraclePaused = true;
   s.feedHeartbeatSec = markets[m.symbol].heartbeat;
 }
 dep.roles.multisig = safe;

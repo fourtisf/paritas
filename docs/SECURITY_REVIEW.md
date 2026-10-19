@@ -46,6 +46,11 @@ Tests: `test_TokensSentToTheVaultNeverReachATrade`, `test_UsdgSentToTheVaultDoes
 Governance re-arms the vault with a timelock `setFeed` once the split is understood. For a planned split, queue that
 call 48h ahead.
 
+On mainnet, Chainlink's Robinhood feeds already report the token's price (share price × `uiMultiplier`), so
+`useUiMultiplier` is `false`. Robinhood also raises `uiMultiplier` a little at every dividend (AAPLx was 1.000566 on
+2026-10-19). Each dividend therefore closes that vault until the same timelock `setFeed`. Vaults start empty, so this
+matters once they are seeded; tolerating small changes would need a contract change.
+
 Tests: `test_SplitClosesTheVaultUntilGovernanceConfirms`, `test_RevertWhen_DepositAfterMultiplierChange`.
 
 ### F-3 Uniswap partial fills (fixed)

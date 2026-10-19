@@ -16,7 +16,7 @@ Rules (`docs/VERIFY_ON_CHAIN.md`):
 |---|---|
 | Any contract | Verified source. The contract name matches what is expected. |
 | Token | `symbol()` and `decimals()`. USDG is expected to have 6 decimals and stock tokens 18; write down what is true. |
-| Stock token | Also `oraclePaused()` and `uiMultiplier()`. If `uiMultiplier` is not 1e18, decide `useUiMultiplier` with Michael. |
+| Stock token | Also `oraclePaused()` and `uiMultiplier()`. Above 1e18 is normal after dividends; the feed already includes it, so `useUiMultiplier` stays `false` (`docs/VERIFY_ON_CHAIN.md`). |
 | Chainlink feed | `description()` names the right stock. Note `decimals()`, the heartbeat and the deviation threshold (DECISIONS #9). `latestRoundData()` is recent during market hours. |
 | Uniswap | From Uniswap's official deployments page for this chain. A USDG/stock pool exists at the fee tier in `config/protocol.json`. |
 | Safe and keys | The Safe is a contract with the signers in `config/protocol.json` (1-of-1 at launch, DECISIONS #6). Keys come from their owners, never from a chat. |
@@ -33,8 +33,7 @@ Rules (`docs/VERIFY_ON_CHAIN.md`):
 
 ## Stock tokens and their feeds
 
-Fill in `feedHeartbeatSec` from the feed's page, and `useUiMultiplier` from the `uiMultiplier()` check.
-`checkOraclePaused` stays `true`.
+Fill in `feedHeartbeatSec` from the feed's page. `useUiMultiplier` stays `false` and `checkOraclePaused` stays `true`.
 
 | # | Key | Must be | Address | Heartbeat (s) | `uiMultiplier()` | Checker 1 | Checker 2 |
 |---|---|---|---|---|---|---|---|
