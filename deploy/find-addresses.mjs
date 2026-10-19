@@ -36,6 +36,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 
 const [file, rpc, deployerArg, attesterArg] = process.argv.slice(2);
+const LIST = process.argv.includes("--list"); // only print what the pages and the chain gave, change nothing
 const deployer = getAddress(deployerArg);
 const attester = getAddress(attesterArg);
 const root = new URL("..", import.meta.url).pathname;
@@ -142,6 +143,7 @@ else problems.push(`Uniswap QuoterV2: ${quoter ? `${quoter} does not report the 
 const pool = [...new Set([...addressesIn(rhHtml), ...addressesIn(clPage), ...clFeeds.flatMap((f) => [f.proxyAddress, f.contractAddress].filter((x) => x && isAddress(x)).map((x) => getAddress(x.toLowerCase())))])];
 const tokens = [];
 const feeds = [];
+const otherTokens = []; // ERC-20s without Robinhood's oraclePaused()/uiMultiplier()
 async function classify(a) {
   if (!(await hasCode(a))) return;
   const sym = await read(a, "function symbol() view returns (string)");
@@ -152,6 +154,7 @@ async function classify(a) {
       read(a, "function decimals() view returns (uint8)"),
     ]);
     if (paused !== undefined && mult !== undefined) tokens.push({ a, sym, mult, dec: Number(dec) });
+    else otherTokens.push({ a, sym, dec: Number(dec), paused: paused !== undefined, mult: mult !== undefined });
     return;
   }
   const desc = await read(a, "function description() view returns (string)");
@@ -169,6 +172,14 @@ for (let i = 0; i < pool.length; i += 12) {
   process.stdout.write(".");
 }
 say(" done");
+if (LIST) {
+  say(`Robinhood docs pages read: ${rhPages.length}`);
+  say(`Stock tokens (oraclePaused and uiMultiplier): ${tokens.map((x) => x.sym).join(" ") || "none"}`);
+  say(`Other tokens [P = has oraclePaused, M = has uiMultiplier]: ${otherTokens.map((x) => `${x.sym}${x.paused ? "P" : ""}${x.mult ? "M" : ""}/${x.dec}`).join(" ") || "none"}`);
+  say(`Feeds on chain (description): ${feeds.map((x) => x.desc).join(" | ") || "none"}`);
+  say(`Chainlink directory names: ${clFeeds.slice(0, 60).map((f) => f.name).join(" | ") || "none"}`);
+  process.exit(0);
+}
 const tickerOf = (s) => s.toUpperCase().replace(/X$/, "");
 const now = (await client.getBlock()).timestamp; // chain time, as the feeds use
 const markets = {};
