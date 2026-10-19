@@ -86,7 +86,7 @@
   "roles": {
     "multisig": "TODO_VERIFY_ON_BLOCKSCOUT",
     "guardian": "TODO_VERIFY_ON_BLOCKSCOUT",
-    "attester": "TODO_VERIFY_ON_BLOCKSCOUT",
+    "attester": "0xe0b41BBd59422f67c65596045554C1a01AF5f2d5",
     "treasury": "TODO_VERIFY_ON_BLOCKSCOUT"
   },
   "paritas": {}
