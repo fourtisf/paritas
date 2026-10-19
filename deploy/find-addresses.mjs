@@ -142,24 +142,37 @@ else problems.push(`Uniswap QuoterV2: ${quoter ? `${quoter} does not report the 
 const pool = [...new Set([...addressesIn(rhHtml), ...addressesIn(clPage), ...clFeeds.flatMap((f) => [f.proxyAddress, f.contractAddress].filter((x) => x && isAddress(x)).map((x) => getAddress(x.toLowerCase())))])];
 const tokens = [];
 const feeds = [];
-for (const a of pool) {
-  if (!(await hasCode(a))) continue;
+async function classify(a) {
+  if (!(await hasCode(a))) return;
   const sym = await read(a, "function symbol() view returns (string)");
   if (sym !== undefined) {
-    const paused = await read(a, "function oraclePaused() view returns (bool)");
-    const mult = await read(a, "function uiMultiplier() view returns (uint256)");
-    if (paused !== undefined && mult !== undefined) tokens.push({ a, sym, mult, dec: Number(await read(a, "function decimals() view returns (uint8)")) });
-    continue;
+    const [paused, mult, dec] = await Promise.all([
+      read(a, "function oraclePaused() view returns (bool)"),
+      read(a, "function uiMultiplier() view returns (uint256)"),
+      read(a, "function decimals() view returns (uint8)"),
+    ]);
+    if (paused !== undefined && mult !== undefined) tokens.push({ a, sym, mult, dec: Number(dec) });
+    return;
   }
   const desc = await read(a, "function description() view returns (string)");
   if (desc !== undefined) {
-    const round = await read(a, "function latestRoundData() view returns (uint80,int256,uint256,uint256,uint80)");
-    feeds.push({ a, desc, dec: Number(await read(a, "function decimals() view returns (uint8)")), answer: round?.[1], updatedAt: round?.[3], startedAt: round?.[2] });
+    const [round, dec] = await Promise.all([
+      read(a, "function latestRoundData() view returns (uint80,int256,uint256,uint256,uint80)"),
+      read(a, "function decimals() view returns (uint8)"),
+    ]);
+    feeds.push({ a, desc, dec: Number(dec), answer: round?.[1], updatedAt: round?.[3], startedAt: round?.[2] });
   }
 }
+process.stdout.write(`  checking ${pool.length} addresses on-chain`);
+for (let i = 0; i < pool.length; i += 12) {
+  await Promise.all(pool.slice(i, i + 12).map(classify));
+  process.stdout.write(".");
+}
+say(" done");
 const tickerOf = (s) => s.toUpperCase().replace(/X$/, "");
 const now = (await client.getBlock()).timestamp; // chain time, as the feeds use
 const markets = {};
+const missingMarkets = []; // not on the official pages (yet): left out of this deployment, added later via the timelock
 for (const m of cfg.markets) {
   const t = tickerOf(m.symbol);
   const tk = tokens.filter((x) => tickerOf(x.sym) === t);
@@ -169,8 +182,13 @@ for (const m of cfg.markets) {
   });
   // with more than one feed, prefer the one named after the token's own symbol ("NVDAx / USD" for NVDAx)
   const fdPick = fd.length > 1 && tk.length === 1 ? fd.filter((x) => x.desc.split("/")[0].trim() === tk[0].sym) : fd;
-  if (tk.length !== 1) problems.push(`${m.symbol} token: ${tk.length ? `${tk.length} Robinhood stock tokens answer as ${t}: ${tk.map((x) => `${x.a} (${x.sym})`).join(", ")}` : "no Robinhood stock token for this ticker on the official pages"}`);
-  if (fdPick.length !== 1) problems.push(`${m.symbol} feed: ${fdPick.length ? `${fdPick.length} feeds for ${t} / USD: ${fdPick.map((x) => `${x.a} (${x.desc})`).join(", ")}` : `no live "${t} / USD" feed on the official pages`}`);
+  // two candidates is a real ambiguity and stops everything; none means the market is not live on the chain yet
+  if (tk.length > 1) problems.push(`${m.symbol} token: ${tk.length} Robinhood stock tokens answer as ${t}: ${tk.map((x) => `${x.a} (${x.sym})`).join(", ")}`);
+  if (fdPick.length > 1) problems.push(`${m.symbol} feed: ${fdPick.length} feeds for ${t} / USD: ${fdPick.map((x) => `${x.a} (${x.desc})`).join(", ")}`);
+  if (tk.length === 0 || fdPick.length === 0) {
+    missingMarkets.push(`${m.symbol} (${[tk.length ? "" : "no stock token", fdPick.length ? "" : `no live ${t} / USD feed`].filter(Boolean).join(", ")})`);
+    continue;
+  }
   if (tk.length === 1 && fdPick.length === 1) {
     const meta = clFeeds.find((f) => f.proxyAddress && f.proxyAddress.toLowerCase() === fdPick[0].a.toLowerCase());
     markets[m.symbol] = { token: tk[0], feed: fdPick[0], heartbeat: Number(meta?.heartbeat ?? 0) };
@@ -192,7 +210,10 @@ row("Uniswap SwapRouter02", found.router02, found.router02 ? "factory() matches"
 row("Uniswap QuoterV2", found.quoter, found.quoter ? "factory() matches" : "");
 for (const m of cfg.markets) {
   const x = markets[m.symbol];
-  if (!x) continue;
+  if (!x) {
+    row(`${m.symbol}`, undefined, "not on the official pages yet");
+    continue;
+  }
   const age = x.feed.updatedAt ? `${(Number(now - x.feed.updatedAt) / 3600).toFixed(1)}h old` : "";
   row(`${m.symbol} token`, x.token.a, `${x.token.sym}, ${x.token.dec} decimals, uiMultiplier ${x.token.mult}`);
   row(`${m.symbol} feed`, x.feed.a, `"${x.feed.desc}", ${x.feed.dec} decimals, ${Number(x.feed.answer) / 10 ** x.feed.dec} USD, ${age}`);
@@ -204,6 +225,7 @@ for (const m of cfg.markets) {
 }
 row("Sequencer uptime feed", sequencer, sequencer ? "Chainlink L2 sequencer feed" : "");
 
+if (!Object.keys(markets).length) problems.push("No market has both a stock token and a live feed on the official pages.");
 if (problems.length) {
   say();
   say("Not proposed (the official pages and the chain do not agree):");
@@ -222,6 +244,13 @@ const ask = async (q) => {
   const { value } = await lines.next();
   return (value ?? "").trim();
 };
+if (missingMarkets.length) {
+  say();
+  say("Not on Robinhood Chain's official pages yet, so not deployed now:");
+  for (const x of missingMarkets) say(`  - ${x}`);
+  const a = await ask(`Launch with the other ${Object.keys(markets).length} markets and add these later through the timelock? Type YES: `);
+  if (a !== "YES") fail("Stopped.");
+}
 if (!sequencer) {
   const a = await ask("No Chainlink sequencer uptime feed was found for Robinhood Chain. Deploy without one (DECISIONS #10)? Type YES: ");
   if (a !== "YES") fail("Stopped.");
@@ -302,7 +331,7 @@ const treasury = treasuryIn ? getAddress(treasuryIn) : safe;
 say();
 say("Open any line on Blockscout to check it yourself:");
 say(`  ${EXPLORER}${found.usdg}`);
-for (const m of cfg.markets) say(`  ${EXPLORER}${markets[m.symbol].token.a}   ${EXPLORER}${markets[m.symbol].feed.a}`);
+for (const x of Object.values(markets)) say(`  ${EXPLORER}${x.token.a}   ${EXPLORER}${x.feed.a}`);
 say(`  ${EXPLORER}${safe}`);
 const yes = await ask("Type YES to write these addresses into deployments/4663.json: ");
 rl.close();
@@ -316,6 +345,10 @@ dep.external.uniswapV3Factory.address = found.factory;
 dep.external.uniswapQuoterV2.address = found.quoter;
 dep.external.sequencerUptimeFeed.address = sequencer;
 for (const m of cfg.markets) {
+  if (!markets[m.symbol]) {
+    delete dep.external.stocks[m.symbol]; // Deploy.s.sol lists only the markets in this file
+    continue;
+  }
   const s = dep.external.stocks[m.symbol];
   s.token = markets[m.symbol].token.a;
   s.chainlinkFeed = markets[m.symbol].feed.a;

@@ -70,15 +70,26 @@ contract Deploy is Script, DeployCore {
 
     // ---------------------------------------------------------------- config reading
 
+    /// @dev Every market in config/protocol.json that has an entry in the deployment file. A market the chain does not
+    /// have yet is left out of the file (deploy/find-addresses.mjs asks first) and listed later through the timelock.
     function _stocks(string memory j, string memory cfg) internal view returns (StockCfg[] memory out) {
         uint256 n;
-        while (vm.keyExistsJson(cfg, string.concat(".markets[", vm.toString(n), "]"))) n++;
-        out = new StockCfg[](n);
+        uint256 present;
+        while (vm.keyExistsJson(cfg, string.concat(".markets[", vm.toString(n), "]"))) {
+            string memory sym0 = vm.parseJsonString(cfg, string.concat(".markets[", vm.toString(n), "].symbol"));
+            if (vm.keyExistsJson(j, string.concat(".external.stocks.", sym0))) present++;
+            else console2.log("not in the deployment file, not listed now:", sym0);
+            n++;
+        }
+        require(present > 0, "no market in the deployment file");
+        out = new StockCfg[](present);
+        uint256 k;
         for (uint256 i; i < n; ++i) {
             string memory m = string.concat(".markets[", vm.toString(i), "].");
             string memory sym = vm.parseJsonString(cfg, string.concat(m, "symbol"));
+            if (!vm.keyExistsJson(j, string.concat(".external.stocks.", sym))) continue;
             string memory s = string.concat(".external.stocks.", sym, ".");
-            out[i] = StockCfg({
+            out[k++] = StockCfg({
                 symbol: sym,
                 token: _contractAt(j, string.concat(s, "token")),
                 feed: _contractAt(j, string.concat(s, "chainlinkFeed")),
