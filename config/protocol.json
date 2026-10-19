@@ -3,6 +3,7 @@
   "version": 1,
   "fees": { "protocolFeeBps": 2, "rfqFeeBps": 2, "spreadShareBps": 1000 },
   "rfq": { "minUsd": 25000, "maxUsd": 2000000, "quoteTtlSec": 30 },
+  "swap": { "deadlineSec": 1200 },
   "oracle": { "vaultMaxAgeSec": 3600, "bandMaxAgeSec": 345600, "sequencerGraceSec": 3600 },
   "tiers": {
     "A": { "index": 0, "halfSpreadBps": 10, "skewBps": 15, "bandBps": 75, "clipUsd": 50000, "capUsd": 2500000 },

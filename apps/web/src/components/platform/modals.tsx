@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { useConnect, type Connector } from "wagmi";
 import { SESSION_COPY, CHAINS, type SessionName } from "@paritas/shared";
 import { CHAIN_ID } from "@/lib/wagmi";
-import { clamp, fmtPct, short } from "@/lib/format";
+import { fmtPct, short } from "@/lib/format";
 import { Icon } from "./Icon";
 import { Modal, ModalHead, useUI } from "./ui";
 import { CAN_SIMULATE, DEFAULTS, useSettings, type Settings } from "./settings";
@@ -151,16 +151,6 @@ export function SettingsModal() {
           </div>
           <div className="set-row">
             <div>
-              <b>Transaction deadline</b>
-              <span className="s">Minutes before an unsent swap expires</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input className="input" type="number" min={1} max={120} defaultValue={s.deadline} style={{ width: 84 }} onChange={(e) => set({ deadline: clamp(+e.target.value || 20, 1, 120) })} />
-              <span className="t2">min</span>
-            </div>
-          </div>
-          <div className="set-row">
-            <div>
               <b>Routing</b>
               <span className="s">Which venues the router may use</span>
             </div>
@@ -243,7 +233,7 @@ export function SettingsModal() {
             <div className="set-row">
               <div>
                 <b>Reset settings</b>
-                <span className="s">Restore slippage, deadline, routing and display</span>
+                <span className="s">Restore slippage, routing and display</span>
               </div>
               <button
                 className="btn btn-line btn-sm"

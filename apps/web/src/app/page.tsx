@@ -97,7 +97,7 @@ export default async function Landing() {
               <ol className="flow">
                 <li><h3 className="h3">Quote</h3><p>The vault prices from Chainlink, the router reads Uniswap, and makers sign their quotes.</p></li>
                 <li><h3 className="h3">Compare</h3><p>The router picks the route that gives you the most tokens or the most USDG.</p></li>
-                <li><h3 className="h3">Check</h3><p>The fill must sit inside the price limit, your slippage and your deadline.</p></li>
+                <li><h3 className="h3">Check</h3><p>The fill must sit inside the price limit and your slippage.</p></li>
                 <li><h3 className="h3">Settle</h3><p>Everything clears in one transaction. If any check fails, nothing moves.</p></li>
               </ol>
             </div>

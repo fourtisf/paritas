@@ -1,6 +1,6 @@
 "use client";
 /**
- * The Settings modal's state: slippage, deadline, routing, display and notifications. Saved per browser
+ * The Settings modal's state: slippage, routing, display and notifications. Saved per browser
  * (localStorage, best effort). "Simulate a session" is for dev and testnet builds only.
  */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -10,7 +10,6 @@ import { CHAIN_ID } from "@/lib/wagmi";
 
 export interface Settings {
   slip: number; // bps
-  deadline: number; // minutes
   pref: "best" | "nomaker" | "vault";
   tz: Tz;
   unit: Unit;
@@ -18,7 +17,7 @@ export interface Settings {
   sim: SessionName | "live";
 }
 
-export const DEFAULTS: Settings = { slip: 30, deadline: 20, pref: "best", tz: "local", unit: "pct", notif: { fills: true, session: true }, sim: "live" };
+export const DEFAULTS: Settings = { slip: 30, pref: "best", tz: "local", unit: "pct", notif: { fills: true, session: true }, sim: "live" };
 export const CAN_SIMULATE = CHAIN_ID !== 4663;
 const KEY = "paritas.settings.v1";
 

@@ -36,6 +36,7 @@ export const PROTOCOL = raw as unknown as {
   version: number;
   fees: { protocolFeeBps: number; rfqFeeBps: number; spreadShareBps: number };
   rfq: { minUsd: number; maxUsd: number; quoteTtlSec: number };
+  swap: { deadlineSec: number }; // a signed swap that is not mined within this long reverts (not shown in the app)
   oracle: { vaultMaxAgeSec: number; bandMaxAgeSec: number; sequencerGraceSec: number };
   tiers: Record<TierKey, TierParams>;
   sessions: Record<SessionName, SessionParams>;

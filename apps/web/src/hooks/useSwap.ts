@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import { useAccount, useConfig } from "wagmi";
 import { readContract, writeContract, waitForTransactionReceipt, getBlock } from "wagmi/actions";
 import { erc20Abi, maxUint256, BaseError, ContractFunctionRevertedError, UserRejectedRequestError } from "viem";
-import { swapRouterAbi, decodeRouteLogs, explainError, type RouteRow } from "@paritas/shared";
+import { swapRouterAbi, decodeRouteLogs, explainError, PROTOCOL, type RouteRow } from "@paritas/shared";
 import type { QuoteResponse } from "./useQuote";
 import { CHAIN_ID } from "@/lib/env";
 import { ensureChain } from "@/lib/chainGuard";
@@ -22,7 +22,7 @@ export function txErrorMessage(e: unknown) {
 
 /**
  * Approve (if needed) -> swap -> wait -> decode the receipt. Drives the prototype's runFlow() modal steps.
- * The deadline is set here from the user's setting (minutes, on chain time), never by the API.
+ * The deadline is set here (config swap.deadlineSec on chain time), never by the API. The app does not show it.
  */
 export function useSwap(addresses: { router: `0x${string}`; usdg: `0x${string}` }) {
   const config = useConfig();
@@ -32,7 +32,7 @@ export function useSwap(addresses: { router: `0x${string}`; usdg: `0x${string}` 
   const [error, setError] = useState<string | null>(null);
 
   const run = useCallback(
-    async (q: QuoteResponse, deadlineMinutes: number, payToken: string) => {
+    async (q: QuoteResponse, payToken: string) => {
       if (!address || !q.swapArgs) return null;
       setError(null);
       setReceipt(null);
@@ -43,7 +43,7 @@ export function useSwap(addresses: { router: `0x${string}`; usdg: `0x${string}` 
       const needsApproval = allowance < amountIn;
       const plan: Step[] = [
         ...(needsApproval ? [{ label: `Approve ${payToken}`, detail: "One-time permission for the router", state: "todo" as const }] : []),
-        { label: "Confirm in your wallet", detail: "Sign with your slippage and deadline", state: "todo" },
+        { label: "Confirm in your wallet", detail: "Sign with your slippage", state: "todo" },
         { label: "Settling on Robinhood Chain", detail: "Usually under a second", state: "todo" },
       ];
       setSteps(plan);
@@ -71,7 +71,7 @@ export function useSwap(addresses: { router: `0x${string}`; usdg: `0x${string}` 
               amountIn,
               minAmountOut: BigInt(a.minAmountOut),
               recipient: a.recipient,
-              deadline: block.timestamp + BigInt(deadlineMinutes * 60),
+              deadline: block.timestamp + BigInt(PROTOCOL.swap.deadlineSec),
               legs: a.legs.map((l) => ({ venue: l.venue, amountIn: BigInt(l.amountIn), data: l.data })),
             },
           ],

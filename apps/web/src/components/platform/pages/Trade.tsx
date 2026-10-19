@@ -345,7 +345,7 @@ export function TradePage() {
                     Sell
                   </button>
                 </div>
-                <button className="icon-btn" style={{ width: 36, height: 36 }} aria-label="Slippage and deadline" onClick={(e) => ui.openPop(e.currentTarget, <SlipPop />)}>
+                <button className="icon-btn" style={{ width: 36, height: 36 }} aria-label="Slippage" onClick={(e) => ui.openPop(e.currentTarget, <SlipPop />)}>
                   <Icon n="gear" />
                 </button>
               </div>
@@ -649,15 +649,8 @@ function SlipPop() {
           </button>
         ))}
       </div>
-      <div className="field-l" style={{ margin: "14px 0 8px" }}>
-        <span>Transaction deadline</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <input className="input" type="number" min={1} max={120} defaultValue={s.deadline} style={{ width: 90 }} onChange={(e) => set({ deadline: clamp(+e.target.value || 20, 1, 120) })} />
-        <span className="t2">minutes</span>
-      </div>
       <p className="muted" style={{ fontSize: 12, margin: "12px 0 0" }}>
-        The swap reverts if the price moves past your tolerance or the deadline passes.
+        The swap reverts if the price moves past your tolerance.
       </p>
     </div>
   );
@@ -739,7 +732,6 @@ function ReviewModal({ q, m, side, amt }: { q: QuoteResponse; m: Market; side: S
               {fmt.cost(used)} of {fmtPct(q.priceLimitBps)}
             </span>
           </Ln>
-          <Ln k="Deadline">{s.deadline} minutes</Ln>
         </div>
         <button className="btn btn-holo btn-lg btn-block" style={{ marginTop: 18 }} autoFocus onClick={() => ui.openModal(<SwapFlow q={q} m={m} side={side} />)}>
           Confirm swap
@@ -763,7 +755,7 @@ function SwapFlow({ q, m, side }: { q: QuoteResponse; m: Market; side: Side }) {
   useEffect(() => {
     if (started.current) return; // never send twice (React dev mode re-runs effects)
     started.current = true;
-    swap.run(q, s.deadline, payT).then(async (r) => {
+    swap.run(q, payT).then(async (r) => {
       w.refetch();
       qc.invalidateQueries({ queryKey: ["fills"] });
       if (!r) return;
