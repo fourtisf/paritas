@@ -25,6 +25,8 @@ import {
   AbiDecodingZeroDataError,
   ContractFunctionRevertedError,
   ContractFunctionZeroDataError,
+  HttpRequestError,
+  TimeoutError,
   concat,
   createPublicClient,
   createWalletClient,
@@ -85,24 +87,26 @@ async function fetchText(url) {
 const textOf = (html) => html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ").replace(/\s+/g, " ");
 const addressesIn = (s) => [...new Set((s.match(ADDR) ?? []).map((a) => getAddress(a.toLowerCase())))];
 
-// A revert means the contract has no such function. Anything else (timeout, rate limit) is retried, and if the RPC
-// still does not answer, the run stops: a slow RPC must never look like a missing token or feed.
-const isRevert = (e) =>
-  !!e?.walk?.(
+// An answer from the chain (a revert, or an error about this call, as Arbitrum's system contracts give) means the
+// contract has no such function. Only a failure to get an answer (network, timeout, rate limit) is retried, and if
+// the RPC still does not answer, the run stops: a slow RPC must never look like a missing token or feed.
+const RETRY_CODES = [-1, 429, -32005, -32007, -32603]; // unknown, too many requests, limit exceeded, internal error
+const transient = (e) =>
+  !e?.walk ||
+  (!e.walk(
     (x) =>
       x instanceof ContractFunctionRevertedError ||
       x instanceof ContractFunctionZeroDataError ||
       x instanceof AbiDecodingZeroDataError ||
-      x instanceof AbiDecodingDataSizeTooSmallError ||
-      x?.code === 3 ||
-      /revert|invalid opcode/i.test(`${x?.details ?? ""} ${x?.shortMessage ?? ""}`),
-  );
+      x instanceof AbiDecodingDataSizeTooSmallError,
+  ) &&
+    !!e.walk((x) => x instanceof HttpRequestError || x instanceof TimeoutError || RETRY_CODES.includes(x?.code)));
 async function retrying(call, what) {
   for (let i = 0; ; i++) {
     try {
       return await call();
     } catch (e) {
-      if (isRevert(e)) throw e;
+      if (!transient(e)) throw e;
       if (i === 5) fail(`\nThe Robinhood Chain RPC did not answer (${what}: ${e.shortMessage ?? e.message}). Run the same command again in a few minutes.`);
       await new Promise((r) => setTimeout(r, 1000 * 2 ** i));
     }
@@ -199,6 +203,7 @@ const tokens = [];
 const feeds = [];
 const otherTokens = []; // ERC-20s without Robinhood's oraclePaused()/uiMultiplier()
 async function classify(a) {
+  if (BigInt(a) < 0x10000n) return; // zero, precompiles and Arbitrum system contracts (0x64 ArbSys ... 0xc8): never tokens or feeds
   if (!(await hasCode(a))) return;
   const sym = await read(a, "function symbol() view returns (string)");
   if (sym !== undefined) {
